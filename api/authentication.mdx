@@ -1,0 +1,102 @@
+---
+title: "Authentication"
+description: "How API routes authenticate requests and enforce workspace/room access."
+---
+
+## Client-side session
+
+The browser holds a Supabase session via `@supabase/supabase-js` (`src/lib/supabase/client.ts`). On login, the access token is available from `supabase.auth.getSession()`.
+
+## API Bearer token
+
+Client fetch calls attach the token via `src/lib/api/auth-client.ts`:
+
+```typescript
+const session = await supabase.auth.getSession();
+const headers = {
+  Authorization: `Bearer ${session.data.session?.access_token}`,
+  "Content-Type": "application/json",
+};
+```
+
+## Server-side validation
+
+Every protected route starts with:
+
+```typescript
+const { user, client } = await requireAuthUser(request);
+```
+
+`requireAuthUser()` (`src/lib/supabase/auth-server.ts`):
+
+1. Extracts Bearer token from `Authorization` header
+2. Validates with Supabase Auth
+3. Returns authenticated user + RLS-scoped Supabase client
+
+Throws `AuthError` with HTTP status on failure (401 unauthorized, 403 forbidden).
+
+## Workspace membership
+
+After auth, routes call:
+
+```typescript
+const { role } = await requireWorkspaceMembership(client, workspaceId, user.id);
+```
+
+Roles: `owner`, `admin`, `member`, `viewer`.
+
+Some endpoints require owner/admin specifically (AI settings, runtime status).
+
+## Room access
+
+Room-scoped endpoints add:
+
+| Check | Function | Used by |
+|-------|----------|---------|
+| Send message | `assertCanSendRoomMessage()` | Messages, respond |
+| Read access | `assertCanAccessRoom()` | Process agent run, topics |
+
+Implementation: `src/lib/server/room-access.ts`
+
+- Workspace admins bypass `room_members` checks
+- Regular members must be in `room_members`
+
+## Service role (agent processing)
+
+`POST /api/agent-runs/:runId/process` uses a hybrid pattern:
+
+1. User Bearer token validates identity and room access
+2. `createServiceRoleClient()` performs writes that need to bypass RLS
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` on the server.
+
+<Warning>
+Never expose the service role key to the browser. It is server-only.
+</Warning>
+
+## Public endpoints
+
+| Endpoint | Auth |
+|----------|------|
+| `POST /api/auth/resend-confirmation` | None — accepts email only |
+| `POST /api/dev/seed-demo` | None — blocked unless `NODE_ENV === "development"` |
+
+## Debug header
+
+Optional header for extended error payloads:
+
+```
+X-AdeHQ-Debug: true
+```
+
+Used by the debug terminal in development.
+
+## Supabase RLS
+
+Row-level security policies in `supabase/schema.sql` enforce workspace isolation at the database level. API routes add an application layer on top for room/topic scoping and role checks.
+
+Helper functions:
+
+- `is_workspace_member(workspace_id)`
+- `is_workspace_admin(workspace_id)`
+- `shares_workspace_with(user_id)`

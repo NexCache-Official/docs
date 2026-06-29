@@ -1,0 +1,94 @@
+---
+title: "AI employees"
+description: "Hiring, configuring, and interacting with AI workforce members."
+---
+
+## What is an AI employee?
+
+An AI employee is a configured agent in your workspace — not a generic chatbot. Each has a role, model tier, permission set, and optional tool connections.
+
+## Hiring
+
+### Onboarding (first employee)
+
+The onboarding wizard (`OnboardingFlow`) walks new users through:
+
+1. Choose a role template
+2. Customize name and avatar
+3. Select intelligence level (model mode)
+4. Create first project room
+
+### Additional hires
+
+Use **Hire employee** from the workforce page or command bar (⌘K). Opens `HireEmployeeModal`.
+
+## Configuration
+
+| Setting | Where | Effect |
+|---------|-------|--------|
+| Role template | Hire modal | Default prompts, suggested tools |
+| Model mode | Employee profile | Maps to SiliconFlow model tier |
+| Permissions | Employee profile | What AI effects are allowed |
+| Status | Employee profile | `active`, `paused`, `archived` |
+| Tools | Employee profile | Per-employee tool access |
+
+### Model modes
+
+| Mode | Use case | Default model |
+|------|----------|---------------|
+| `cheap` | Simple Q&A, high volume | DeepSeek-V3 |
+| `balanced` | General work | DeepSeek-V4-Flash |
+| `strong` | Complex reasoning | DeepSeek-V4-Pro |
+| `coding` | Code generation/review | Qwen3-Coder-30B |
+| `long_context` | Large document analysis | MiniMax-M2.5 |
+| `creative` | Writing, brainstorming | DeepSeek-V4-Flash |
+
+Configured via env vars — see [Environment](/development/environment).
+
+## Permissions
+
+Stored as JSONB on `ai_employees.permissions`. Enforced in `enforce-permissions.ts` before persisting:
+
+- Task creation
+- Memory writes
+- Approval requests
+- Work log entries
+
+Blocked actions are logged, not silently dropped.
+
+## Interaction patterns
+
+### @mention in a room
+
+Type `@Employee Name` in chat. The server parses the mention and queues an agent run.
+
+### Direct message
+
+Create a DM room with an employee. On the General topic, the employee auto-responds to every message.
+
+### Smart participation
+
+Set topic AI mode to `smart_assist` or `active_team`. Employees join based on content heuristics without explicit mentions.
+
+### Direct respond API
+
+`POST /api/employees/:employeeId/respond` — bypasses the queue. Used by tasks page and settings test panel.
+
+## Workforce pages
+
+| Route | Purpose |
+|-------|---------|
+| `/workforce` | Grid/list of all employees |
+| `/workforce/new` | Opens hire modal |
+| `/workforce/[employeeId]` | Profile, stats, model config, work history |
+
+## Database
+
+- `ai_employees` — composite PK `(workspace_id, id)`
+- `employee_tools` — tool access per employee
+
+## Related
+
+- [Workforce PRD](/prds/workforce)
+- [SiliconFlow integration](/integrations/siliconflow)
+- [Agents API](/api/agents)

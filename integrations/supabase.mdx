@@ -1,0 +1,85 @@
+---
+title: "Supabase"
+description: "How AdeHQ uses Supabase for auth, database, and realtime."
+---
+
+## Role in AdeHQ
+
+Supabase is the primary backend for production:
+
+| Service | Usage |
+|---------|-------|
+| **Auth** | Email/password signup, login, email confirmation |
+| **Postgres** | All workspace data with RLS |
+| **Realtime** | Live sync across browser tabs |
+
+## Client libraries
+
+| File | Purpose |
+|------|---------|
+| `src/lib/supabase/client.ts` | Browser Supabase client |
+| `src/lib/supabase/server.ts` | Server clients (user-scoped + service role) |
+| `src/lib/supabase/auth-server.ts` | Bearer token validation for API routes |
+| `src/lib/supabase/persistence.ts` | CRUD operations for all entities |
+| `src/lib/supabase/config.ts` | Table names, Realtime subscription list |
+| `src/lib/supabase/ai-runtime.ts` | Usage events, run tracking |
+
+## Auth flow
+
+1. User signs up → Supabase sends confirmation email
+2. User clicks link → redirected to `/auth/callback`
+3. Callback completes session via `callback-session.ts`
+4. Client store loads workspace data from Postgres
+
+Redirect URLs must include your deployment domain. See [Auth PRD](/prds/auth-onboarding).
+
+## Realtime subscriptions
+
+When authenticated, the store subscribes to changes on all workspace tables defined in `SUPABASE_WORKSPACE_TABLES`:
+
+```typescript
+// src/lib/supabase/config.ts
+export const SUPABASE_WORKSPACE_TABLES = [
+  "ai_employees", "project_rooms", "room_members",
+  "messages", "tasks", "memory_entries", ...
+];
+```
+
+Changes trigger a debounced (250ms) full workspace reload.
+
+## Row-level security
+
+All workspace data is isolated by RLS policies. See [Database schema](/database/schema) for helper functions and policy patterns.
+
+API routes add application-level checks (room membership, topic access) on top of RLS.
+
+## Service role
+
+The service role client (`createServiceRoleClient()`) is used only server-side for:
+
+- Agent run processing (writes that bypass RLS gaps)
+- Usage event recording
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` env var.
+
+## Multi-workspace
+
+Users can belong to multiple workspaces. Active workspace is stored in localStorage (`active-workspace.ts`) and switched via `WorkspaceSwitcher`.
+
+## Schema management
+
+- Bootstrap: `supabase/schema.sql`
+- Incremental: `supabase/migrations/`
+- See [Migrations](/database/migrations)
+
+## Supabase dashboard configuration
+
+| Setting | Location | Value |
+|---------|----------|-------|
+| Site URL | Auth → URL config | Your deployment URL |
+| Redirect URLs | Auth → URL config | `https://your-app/**` |
+| Email templates | Auth → Email templates | Customize confirmation email |
+
+## MCP integration
+
+The Supabase MCP plugin in Cursor can inspect tables, run SQL, apply migrations, and check logs. Use it for schema debugging alongside these docs.

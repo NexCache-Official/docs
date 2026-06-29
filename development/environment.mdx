@@ -1,0 +1,79 @@
+---
+title: "Environment variables"
+description: "All environment variables for AdeHQ — public, server-only, and integrations."
+---
+
+## Public (browser-safe)
+
+Set in `.env.local` or Vercel project settings. Prefixed with `NEXT_PUBLIC_`.
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Hardcoded fallback in config | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Yes | Hardcoded fallback | Supabase anon/publishable key |
+| `NEXT_PUBLIC_SITE_URL` | Yes | `https://ade-hq-eight.vercel.app` | Auth email redirect base URL |
+| `NEXT_PUBLIC_ENABLE_DEMO_MODE` | No | `false` | Enable demo login and in-memory backend |
+| `NEXT_PUBLIC_AUTH_REDIRECT_PATH` | No | `/auth/callback` | Auth callback path |
+
+Config hub: `src/lib/config/features.ts`
+
+## Server-only
+
+Never expose these to the browser.
+
+### Supabase
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes for AI | Service role for agent run processing |
+
+### SiliconFlow
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `SILICONFLOW_API_KEY` | For live AI | — | LLM API key |
+| `SILICONFLOW_API_BASE_URL` | No | `https://api.siliconflow.com/v1` | API base URL |
+| `ADEHQ_DEFAULT_PROVIDER` | No | `siliconflow` | Default provider name |
+| `ADEHQ_SILICONFLOW_MODEL` | No | `deepseek-ai/DeepSeek-V4-Flash` | Balanced tier |
+| `ADEHQ_SILICONFLOW_CHEAP_MODEL` | No | `deepseek-ai/DeepSeek-V3` | Cheap tier |
+| `ADEHQ_SILICONFLOW_CODER_MODEL` | No | `Qwen/Qwen3-Coder-30B-A3B-Instruct` | Coding tier |
+| `ADEHQ_SILICONFLOW_LONG_CONTEXT_MODEL` | No | `MiniMaxAI/MiniMax-M2.5` | Long context tier |
+| `ADEHQ_SILICONFLOW_STRONG_MODEL` | No | `deepseek-ai/DeepSeek-V4-Pro` | Strong tier |
+
+### Mintlify (docs MCP)
+
+For the Mintlify dashboard MCP integration in Cursor:
+
+| Variable | Purpose |
+|----------|---------|
+| `MINTLIFY_CLIENT_ID` | OAuth client ID from Mintlify dashboard |
+| `MINTLIFY_CLIENT_SECRET` | OAuth client secret |
+
+<Warning>
+Do not commit real secrets to git. Use `.env.local` locally and Vercel env vars in production.
+</Warning>
+
+## Vercel deployment
+
+Set all server-only variables in Vercel → Project → Settings → Environment Variables.
+
+Minimum for production AI:
+
+```
+SUPABASE_SERVICE_ROLE_KEY
+SILICONFLOW_API_KEY
+```
+
+## Checking configuration
+
+| Check | Where |
+|-------|-------|
+| SiliconFlow configured | Settings → AI Runtime panel |
+| Provider test | POST `/api/ai/test-provider` |
+| Service role | Agent run process — 500 with hint if missing |
+
+Helper: `isSiliconFlowConfigured()` in `src/lib/config/features.ts`
+
+## Example file
+
+See `.env.example` in the repo root for the template.

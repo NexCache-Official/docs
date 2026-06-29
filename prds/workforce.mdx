@@ -1,0 +1,81 @@
+---
+title: "PRD: AI workforce"
+description: "Product requirements for hiring, configuring, and managing AI employees."
+tag: "SHIPPED"
+---
+
+## Problem
+
+Teams need configurable AI teammates — not a single generic chatbot. Each role (engineer, researcher, PM) needs distinct behavior, permissions, model tier, and tool access.
+
+## Solution
+
+**AI employees** — first-class workspace entities with role templates, model modes, permission scopes, and room participation.
+
+## Goals
+
+- Hire employees from role templates with sensible defaults
+- Configure model intelligence tier per employee
+- Control what actions each employee can take (tasks, memory, approvals)
+- Enable @mention and DM-based interaction
+- Track employee stats (messages sent, tasks created)
+
+## Non-goals
+
+- Real HR/payroll metaphors
+- Employee-to-employee autonomous delegation chains (handoff depth limited)
+- Persistent employee memory across workspaces
+
+## Role templates
+
+Defined in `src/lib/demo/demo-data.ts` and `ROLE_TEMPLATES`:
+
+| Role key | Typical use |
+|----------|-------------|
+| `engineer` | Code review, implementation planning |
+| `researcher` | Analysis, competitive research |
+| `pm` | Specs, prioritization, stakeholder comms |
+| `designer` | UX feedback, design critique |
+| `ops` | Process, runbooks, incident response |
+
+Each template sets default: name prefix, avatar, system prompt hints, suggested tools, permission bundle.
+
+## Employee configuration
+
+| Field | Description |
+|-------|-------------|
+| `role_key` | Template identifier |
+| `provider` | Always `siliconflow` in production |
+| `model_mode` | Intelligence tier → model mapping |
+| `permissions` | JSONB — what effects the employee can create |
+| `status` | `active`, `paused`, `archived` |
+
+Permissions enforced server-side in `src/lib/ai/enforce-permissions.ts` before persisting AI effects.
+
+## Interaction surfaces
+
+| Surface | How employees participate |
+|---------|--------------------------|
+| Room @mention | `decideResponders()` picks mentioned employees |
+| DM room | Counterpart employee auto-responds on General topic |
+| Smart participation | Topic mode triggers heuristic selection |
+| Tasks page | Direct respond via `/api/employees/:id/respond` |
+| Settings test | Admin test reply panel |
+
+## Technical implementation
+
+| Component | Path |
+|-----------|------|
+| Table | `ai_employees`, `employee_tools` |
+| Hire modal | `src/components/HireEmployeeModal.tsx` |
+| Profile page | `src/app/(app)/workforce/[employeeId]/page.tsx` |
+| Onboarding | `src/components/OnboardingFlow.tsx` (first hire) |
+| Respond API | `/api/employees/[employeeId]/respond` |
+| Prompts | `src/lib/ai/prompts.ts` |
+
+## Success metrics
+
+- Onboarding creates at least one employee + room
+- @mention triggers agent run for the correct employee
+- Permission blocks are logged in work log, not silent failures
+- Employee model mode changes take effect on next run

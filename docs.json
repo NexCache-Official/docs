@@ -2,6 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "luma",
   "name": "AdeHQ",
+  "description": "AdeHQ documentation — product guides for teams and developer reference for the platform.",
   "colors": {
     "primary": "#6C47FF",
     "light": "#8B6FFF",
@@ -12,6 +13,7 @@
     "tabs": [
       {
         "tab": "Documentation",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Get Started",
@@ -57,11 +59,107 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Developer",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "developer/index",
+              "platform/overview",
+              "platform/architecture"
+            ]
+          },
+          {
+            "group": "PRDs",
+            "pages": [
+              "prds/messaging-v2",
+              "prds/ai-runtime",
+              "prds/workforce",
+              "prds/auth-onboarding"
+            ]
+          },
+          {
+            "group": "Platform internals",
+            "pages": [
+              "features/rooms-topics",
+              "features/messaging",
+              "features/ai-employees",
+              "features/work-graph"
+            ]
+          },
+          {
+            "group": "Changelog",
+            "pages": ["changelog"]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "icon": "square-terminal",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "api/overview",
+              "api/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/rooms",
+              "api/topics",
+              "api/agents",
+              "api/ai-settings"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Database",
+        "icon": "database",
+        "groups": [
+          {
+            "group": "Schema",
+            "pages": [
+              "database/schema",
+              "database/migrations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "icon": "wrench",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "development/setup",
+              "development/environment",
+              "development/debugging"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/supabase",
+              "integrations/siliconflow"
+            ]
+          }
+        ]
       }
     ]
   },
   "navbar": {
     "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/NexCache-Official/AdeHQ"
+      },
       {
         "label": "Support",
         "href": "mailto:support@adehq.com"

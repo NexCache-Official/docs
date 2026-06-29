@@ -1,0 +1,97 @@
+---
+title: "Database migrations"
+description: "Ordered migration history for the AdeHQ Postgres schema."
+---
+
+Apply migrations in timestamp order on existing Supabase projects. Each migration is idempotent where possible.
+
+## Migration timeline
+
+| Migration | Date | Summary |
+|-----------|------|---------|
+| `20250627120000_align_production_schema.sql` | Jun 27 | `workspace_mode`, member `status`/`joined_at`, `model_provider_configs` |
+| `20250629120000_ai_runtime_and_work_graph.sql` | Jun 29 | AI runtime tables, work-graph linking columns, `model_mode` on employees |
+| `20250629140000_siliconflow_only_providers.sql` | Jun 29 | Coerce legacy provider values to `siliconflow` |
+| `20250629160000_room_topics_messaging_v2.sql` | Jun 29 | **Messaging v2** — topics, topic members, reactions, topic FKs |
+| `20250629180000_backfill_workspace_ai_settings.sql` | Jun 29 | Default `workspace_ai_settings` row per workspace |
+
+## Details
+
+### 20250627120000 — Production alignment
+
+Adds fields needed for production/demo separation:
+
+- `workspaces.workspace_mode` (`real` | `demo`)
+- `workspace_members.status`, `joined_at`
+- `model_provider_configs` table for future BYOK
+
+### 20250629120000 — AI runtime & work graph
+
+The largest migration. Adds:
+
+**New tables:**
+- `workspace_ai_settings`
+- `agent_runs`, `agent_run_steps`
+- `ai_usage_events`
+
+**New columns on existing tables:**
+- `ai_employees.model_mode`
+- `messages.agent_run_id`, `trigger_message_id`, `artifacts`
+- `tasks.created_by_run_id`
+- Work graph linking columns across tasks, memory, approvals, work_log
+
+### 20250629140000 — SiliconFlow only
+
+Data migration: updates any `ai_employees.provider` values other than `siliconflow` or `mock` to `siliconflow`.
+
+### 20250629160000 — Messaging v2
+
+Topic-based rooms:
+
+**New tables:**
+- `room_topics` — topic metadata, counters, `metadata` JSONB
+- `topic_members` — read cursors, notification levels
+- `message_reactions`
+
+**New columns:**
+- `topic_id` FK on messages, tasks, memory, approvals, work_log, agent_runs, agent_run_steps, ai_usage_events
+
+**Backfill:**
+- Creates General topic for every existing room
+- Assigns orphan messages to General topic
+
+### 20250629180000 — AI settings backfill
+
+Inserts default `workspace_ai_settings` for workspaces that don't have one:
+
+- `daily_token_limit`: 500,000
+- `daily_cost_limit_usd`: 10.00
+- `max_parallel_runs`: 3
+- `max_handoff_depth`: 2
+
+## Applying migrations
+
+### New project
+
+```bash
+# Run in Supabase SQL editor
+supabase/schema.sql
+```
+
+### Existing project
+
+Run each migration file in order via Supabase SQL editor or CLI:
+
+```bash
+supabase db push   # if using Supabase CLI linked to project
+```
+
+## Keeping schema.sql in sync
+
+After adding migrations, update `supabase/schema.sql` to include the latest state so fresh bootstraps match production. Currently `schema.sql` is behind on topic tables — track this as a known gap.
+
+## Related
+
+- [Database schema](/database/schema)
+- [Messaging v2 PRD](/prds/messaging-v2)
+- [AI runtime PRD](/prds/ai-runtime)

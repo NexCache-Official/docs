@@ -1,0 +1,103 @@
+---
+title: "Local setup"
+description: "Run AdeHQ locally with Supabase and SiliconFlow."
+---
+
+## Prerequisites
+
+- Node.js 18+
+- npm
+- Supabase project (or local Supabase CLI stack)
+- SiliconFlow API key (optional — app works without it via fallback)
+
+## Quick start
+
+```bash
+git clone git@github.com:NexCache-Official/AdeHQ.git
+cd AdeHQ
+npm install
+cp .env.example .env.local
+# Fill in Supabase and SiliconFlow keys
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Database setup
+
+### New Supabase project
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run `supabase/schema.sql` in the SQL editor
+3. Apply migrations in order from `supabase/migrations/`
+
+### Existing project
+
+Apply only the migrations you haven't run yet — see [Database migrations](/database/migrations).
+
+## Supabase auth configuration
+
+In Supabase → Authentication → URL configuration:
+
+| Setting | Value |
+|---------|-------|
+| Site URL | `http://localhost:3000` (local) or your Vercel URL |
+| Redirect URLs | `http://localhost:3000/**`, `https://your-app.vercel.app/**` |
+
+## First-run test
+
+<Steps>
+  <Step title="Sign up">
+    Create an account at `/signup`. Check email for confirmation link.
+  </Step>
+  <Step title="Complete onboarding">
+    Hire your first AI employee and create a project room.
+  </Step>
+  <Step title="Test messaging">
+    Open the room, select a topic, send a message. It should persist on refresh.
+  </Step>
+  <Step title="Test AI">
+    Set `SILICONFLOW_API_KEY` in `.env.local`. Go to Settings → AI Runtime → Test provider. Then @mention your employee in a room.
+  </Step>
+</Steps>
+
+## Demo mode (optional)
+
+For local evaluation with seeded data:
+
+```bash
+NEXT_PUBLIC_ENABLE_DEMO_MODE=true npm run dev
+```
+
+Login page shows a demo workspace option. No Supabase writes.
+
+Inspect demo seed structure:
+
+```bash
+npm run db:seed-demo   # POST /api/dev/seed-demo
+```
+
+## Build
+
+```bash
+npm run build
+npm start
+```
+
+## Documentation preview
+
+Preview these docs locally with the Mintlify CLI:
+
+```bash
+npm i -g mint
+git clone git@github.com:NexCache-Official/docs.git
+cd docs
+mint dev
+```
+
+Docs source: [github.com/NexCache-Official/docs](https://github.com/NexCache-Official/docs)
+
+## Related
+
+- [Environment variables](/development/environment)
+- [Debugging](/development/debugging)

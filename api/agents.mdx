@@ -1,0 +1,113 @@
+---
+title: "Agents API"
+description: "Process queued agent runs and direct employee responses."
+---
+
+## POST /api/agent-runs/:runId/process
+
+Execute a queued agent run — the core AI processing endpoint.
+
+**Auth:** Workspace member with room access for the run's room.
+
+**Request body:**
+
+```json
+{
+  "workspaceId": "uuid (optional — inferred from run)",
+  "mode": "mock | live (optional)"
+}
+```
+
+**Success response:**
+
+```json
+{
+  "ok": true,
+  "runId": "uuid",
+  "status": "completed",
+  "aiMessage": {
+    "id": "...",
+    "content": "...",
+    "employeeId": "...",
+    "topicId": "..."
+  },
+  "effects": {
+    "tasks": [],
+    "memoryEntries": [],
+    "approvals": []
+  }
+}
+```
+
+**Failure cases:**
+
+| Condition | Response |
+|-----------|----------|
+| Run not found | 404 |
+| Missing service role key | 500 with setup hint |
+| Cost limit exceeded | Run status `blocked` |
+| LLM failure | Run status `failed`, fallback message optional |
+
+**Processing steps** (`processQueuedAgentRun`):
+
+1. Load run, employee, topic context
+2. Check cost guard / run status
+3. Call `routeEmployeeResponse()` → SiliconFlow
+4. Enforce permissions on effects
+5. Persist AI message + side effects + usage event
+6. Update run status and steps
+
+**Source:** `src/app/api/agent-runs/[runId]/process/route.ts`
+
+<Warning>
+Requires `SUPABASE_SERVICE_ROLE_KEY` on the server. Without it, processing returns a 500 with an explicit setup hint.
+</Warning>
+
+---
+
+## POST /api/employees/:employeeId/respond
+
+Direct AI response — bypasses the agent run queue.
+
+**Auth:** Workspace member with room send permission.
+
+**Request body:**
+
+```json
+{
+  "roomId": "string (required)",
+  "topicId": "uuid (optional)",
+  "content": "string (required — the prompt/context)",
+  "mode": "mock | live"
+}
+```
+
+**Use cases:**
+
+- Settings → Test employee reply
+- Tasks page triggering AI action
+- Debugging without the full message pipeline
+
+**Source:** `src/app/api/employees/[employeeId]/respond/route.ts`
+
+## Agent run statuses
+
+| Status | Meaning |
+|--------|---------|
+| `queued` | Waiting for client to call process |
+| `running` | Currently executing |
+| `completed` | Success |
+| `failed` | LLM or processing error |
+| `waiting_approval` | Blocked on human approval |
+| `blocked` | Cost limit or governance block |
+
+## Responder reasons
+
+When a run is queued from the messages endpoint, each run includes a `reason`:
+
+| Reason | Trigger |
+|--------|---------|
+| `mention` | @mentioned in content |
+| `dm_default` | DM room auto-response |
+| `smart_assist` | Topic participation heuristic |
+| `slash_command` | Forced via chat composer |

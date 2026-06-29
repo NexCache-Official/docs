@@ -1,0 +1,91 @@
+---
+title: "Rooms API"
+description: "POST messages and GET/POST topics for project rooms."
+---
+
+## POST /api/rooms/:roomId/messages
+
+Save a human message and queue AI agent runs.
+
+**Auth:** Workspace member with room send permission.
+
+**Request body:**
+
+```json
+{
+  "content": "string (required)",
+  "topicId": "uuid (optional — defaults to General)",
+  "clientMessageId": "string (optional — idempotency hint)",
+  "mode": "mock | live (optional)",
+  "mentionsJson": [
+    { "type": "ai_employee", "id": "emp-id", "name": "Engineer" }
+  ],
+  "slashCommand": "string (optional)"
+}
+```
+
+**Success response:**
+
+```json
+{
+  "ok": true,
+  "humanMessage": { "id": "...", "content": "...", "topicId": "..." },
+  "queuedRuns": [
+    { "runId": "...", "employeeId": "...", "reason": "mention" }
+  ]
+}
+```
+
+**Error codes:** `message_required`, `room_not_found`, `not_room_member`, `topic_archived`, `topic_not_in_room`
+
+**Source:** `src/app/api/rooms/[roomId]/messages/route.ts`
+
+---
+
+## GET /api/rooms/:roomId/topics
+
+List all topics in a room. Ensures the General topic exists.
+
+**Auth:** Workspace member with room access.
+
+**Response:**
+
+```json
+{
+  "topics": [
+    {
+      "id": "uuid",
+      "title": "General",
+      "status": "active",
+      "priority": "normal",
+      "messageCount": 42,
+      "metadata": { "aiParticipationMode": "manual_only" }
+    }
+  ]
+}
+```
+
+---
+
+## POST /api/rooms/:roomId/topics
+
+Create a new topic.
+
+**Auth:** Workspace member with room access.
+
+**Request body:**
+
+```json
+{
+  "title": "string (required)",
+  "description": "string (optional)",
+  "templateKey": "string (optional — from TOPIC_TEMPLATES)",
+  "priority": "low | normal | high | urgent",
+  "memberIds": ["ai-employee-id"],
+  "starterMessage": "string (optional)"
+}
+```
+
+Creates topic, adds members, posts a system message, and optionally a starter human message.
+
+**Source:** `src/app/api/rooms/[roomId]/topics/route.ts`

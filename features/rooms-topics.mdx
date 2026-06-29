@@ -1,0 +1,87 @@
+---
+title: "Rooms & topics"
+description: "How project rooms and topic threads work in AdeHQ."
+---
+
+## Project rooms
+
+Rooms are the primary collaboration space. Two kinds:
+
+| Kind | Description |
+|------|-------------|
+| `channel` | Shared room for a project or team |
+| `dm` | Direct message with a single AI employee (`dm_employee_id`) |
+
+Rooms are created via `CreateRoomModal` and persisted through `src/lib/supabase/persistence.ts`.
+
+### Room membership
+
+- Humans and AI employees are members via `room_members`
+- Workspace admins bypass membership checks (`src/lib/server/room-access.ts`)
+- Send permission: `assertCanSendRoomMessage()`
+
+## Topics
+
+Every room has at least one topic. The **General** topic is auto-created and cannot be archived.
+
+### Topic fields
+
+| Field | Description |
+|-------|-------------|
+| `title` | Display name (unique per room, case-insensitive) |
+| `status` | `active`, `paused`, `resolved`, `archived` |
+| `priority` | `low`, `normal`, `high`, `urgent` |
+| `summary` | LLM-generated or manual summary |
+| `metadata` | JSONB — includes `aiParticipationMode` |
+| Counters | `message_count`, `task_count`, `open_task_count`, etc. |
+
+### AI participation modes
+
+Set per topic in `metadata.aiParticipationMode`:
+
+```json
+{
+  "aiParticipationMode": "manual_only"
+}
+```
+
+| Mode | When AI responds without @mention |
+|------|-----------------------------------|
+| `manual_only` | Never (except DM rooms) |
+| `smart_assist` | Keyword/role heuristics match |
+| `active_team` | More aggressive heuristics |
+
+Helper: `getAiParticipationMode()` in `src/lib/topics.ts`.
+
+### Topic templates
+
+`TOPIC_TEMPLATES` in `src/lib/topics.ts` provides quick-start presets (Bug fix, Feature spec, Research, etc.) with default title, description, and participation mode.
+
+## UI components
+
+| Component | Purpose |
+|-----------|---------|
+| `TopicList` | Sidebar topic list with unread badges |
+| `TopicPanel` | Topic header — status, priority, summary, members |
+| `NewTopicModal` | Create topic with template selection |
+| Room page | `src/app/(app)/rooms/[roomId]/page.tsx` |
+
+## API endpoints
+
+- `GET /api/rooms/:roomId/topics` — list topics, ensures General exists
+- `POST /api/rooms/:roomId/topics` — create topic
+- `PATCH /api/topics/:topicId` — update topic
+- `DELETE /api/topics/:topicId` — soft-archive (not General)
+- `POST /api/topics/:topicId/members` — add AI employee
+- `POST /api/topics/:topicId/read` — update read cursor
+- `POST /api/topics/:topicId/summarize` — LLM summary
+
+See [Topics API](/api/topics) for request/response details.
+
+## Database tables
+
+- `room_topics` — topic metadata and counters
+- `topic_members` — per-user/AI read cursors and notification level
+- `messages.topic_id` — FK linking messages to topics
+
+Migration: `20250629160000_room_topics_messaging_v2.sql`

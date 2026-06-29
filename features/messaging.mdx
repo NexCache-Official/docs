@@ -1,0 +1,99 @@
+---
+title: "Messaging"
+description: "Human and AI messaging flow — from RoomChat to agent runs."
+---
+
+## Overview
+
+Messaging is the core interaction loop. Humans send messages in topics; the server saves them, decides which AI employees should respond, queues agent runs, and the client processes each run to produce AI replies.
+
+## Client component
+
+`RoomChat` (`src/components/RoomChat.tsx`) handles:
+
+- Message composition via `ChatComposer`
+- @mention autocomplete
+- Slash commands
+- Optimistic UI updates
+- Calling the messages API and processing queued runs
+
+## Send message flow
+
+### 1. Client sends message
+
+```typescript
+POST /api/rooms/{roomId}/messages
+Authorization: Bearer {access_token}
+
+{
+  "content": "@Engineer can you review this?",
+  "topicId": "uuid",
+  "clientMessageId": "optional-client-id",
+  "mentionsJson": [{ "type": "ai_employee", "id": "emp-1", "name": "Engineer" }],
+  "mode": "live"
+}
+```
+
+If `topicId` is omitted, the server uses the room's **General** topic.
+
+### 2. Server saves and decides
+
+The route handler (`src/app/api/rooms/[roomId]/messages/route.ts`):
+
+1. Validates auth, room membership, topic access
+2. Inserts human message via `insertHumanMessage()`
+3. Loads topic context (recent messages, employees, room)
+4. Calls `decideResponders()` to pick AI employees
+5. Queues runs via `queueAgentRuns()`
+6. Returns human message + `queuedRuns[]`
+
+### 3. Client processes runs
+
+For each queued run, the client calls:
+
+```typescript
+POST /api/agent-runs/{runId}/process
+{ "workspaceId": "uuid", "mode": "live" }
+```
+
+The processor (`processQueuedAgentRun`) calls SiliconFlow, enforces permissions, persists the AI message and any side effects (tasks, memory, approvals).
+
+### 4. Realtime sync
+
+Other browser tabs receive updates via Supabase Realtime subscriptions on the `messages` table.
+
+## Responder selection rules
+
+Priority order in `decideResponders()`:
+
+1. **Forced IDs** — slash command override
+2. **@mentions** — parsed from content or `mentionsJson`
+3. **Smart assist** — if topic mode allows, `pickSmartResponders()` uses heuristics
+4. **DM default** — DM room + General topic → counterpart employee responds
+
+Max parallel responders capped by `max_parallel_runs` workspace setting.
+
+## Error handling
+
+Structured errors via `messageError()` (`src/lib/server/message-errors.ts`):
+
+| Code | Meaning |
+|------|---------|
+| `message_required` | Empty content |
+| `room_not_found` | Invalid room ID |
+| `not_room_member` | User lacks send permission |
+| `topic_archived` | Cannot post to archived topic |
+| `topic_not_in_room` | Topic doesn't belong to room |
+
+## Demo mode fallback
+
+When `backend === "demo"`, messages stay in-memory and `useResponder` + `employee-engine.ts` produce scripted replies without API calls.
+
+## Debug tracing
+
+Set header `X-AdeHQ-Debug: true` on API calls to receive extended error payloads. The debug terminal (`DebugTerminal`) surfaces traces in development.
+
+## Related
+
+- [Agents API](/api/agents) — process endpoint details
+- [AI runtime PRD](/prds/ai-runtime) — cost governance and run lifecycle

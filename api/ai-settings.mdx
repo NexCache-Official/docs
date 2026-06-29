@@ -1,0 +1,132 @@
+---
+title: "AI settings API"
+description: "Runtime status, provider testing, and workspace AI governance settings."
+---
+
+## GET /api/ai/runtime
+
+In-memory snapshot of the AI runtime — queued/running runs, recent usage, provider status.
+
+**Auth:** Workspace owner or admin only.
+
+**Response:**
+
+```json
+{
+  "provider": "siliconflow",
+  "configured": true,
+  "activeRuns": 1,
+  "queuedRuns": 2,
+  "recentUsage": [],
+  "fallbackCount": 0
+}
+```
+
+**Source:** `src/app/api/ai/runtime/route.ts`
+
+Used by `AiRuntimePanel` in Settings.
+
+---
+
+## POST /api/ai/test-provider
+
+Health-check a SiliconFlow model call.
+
+**Auth:** Workspace owner or admin only.
+
+**Request body:**
+
+```json
+{
+  "modelMode": "balanced"
+}
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "latencyMs": 842,
+  "response": "Hello from SiliconFlow."
+}
+```
+
+Returns `ok: false` with error detail if `SILICONFLOW_API_KEY` is missing or the model call fails.
+
+**Source:** `src/app/api/ai/test-provider/route.ts`
+
+---
+
+## GET /api/workspaces/:workspaceId/ai-settings
+
+Load workspace AI governance settings.
+
+**Auth:** Workspace owner or admin only.
+
+**Response:**
+
+```json
+{
+  "dailyTokenLimit": 500000,
+  "dailyCostLimitUsd": 10.0,
+  "maxParallelRuns": 3,
+  "maxHandoffDepth": 2
+}
+```
+
+**Source:** `src/app/api/workspaces/[workspaceId]/ai-settings/route.ts`
+
+---
+
+## PATCH /api/workspaces/:workspaceId/ai-settings
+
+Update workspace AI governance settings.
+
+**Auth:** Workspace owner or admin only.
+
+**Request body (all optional):**
+
+```json
+{
+  "dailyTokenLimit": 500000,
+  "dailyCostLimitUsd": 10.0,
+  "maxParallelRuns": 3,
+  "maxHandoffDepth": 2
+}
+```
+
+Settings are stored in `workspace_ai_settings`. Checked by `beginAiRun()` before queuing new runs.
+
+Migration: `20250629180000_backfill_workspace_ai_settings.sql` ensures every workspace has a default row.
+
+---
+
+## POST /api/auth/resend-confirmation
+
+Resend Supabase signup confirmation email.
+
+**Auth:** None (public).
+
+**Request body:**
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Source:** `src/app/api/auth/resend-confirmation/route.ts`
+
+---
+
+## POST /api/dev/seed-demo
+
+Return demo seed data structure for development introspection.
+
+**Auth:** None.
+
+**Guard:** Returns 403 unless `NODE_ENV === "development"`.
+
+**Source:** `src/app/api/dev/seed-demo/route.ts`

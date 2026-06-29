@@ -1,0 +1,97 @@
+---
+title: "Changelog"
+description: "Platform changelog aligned with development commits and migrations."
+---
+
+Development history for AdeHQ, mapped to commits and schema migrations.
+
+## 2025-06-29 — Messaging v2 & AI runtime
+
+### Messaging v2 (topics)
+
+<Update label="2025-06-29" description="Shipped">
+  Topic-based rooms with Zulip-inspired threads. Every room has a General topic. AI participation modes per topic. Topic templates, summarization, unread tracking.
+</Update>
+
+- Migration: `20250629160000_room_topics_messaging_v2.sql`
+- New tables: `room_topics`, `topic_members`, `message_reactions`
+- New APIs: topics CRUD, members, read cursors, summarize
+- UI: `TopicList`, `TopicPanel`, `NewTopicModal`
+- PRD: [Messaging v2](/prds/messaging-v2)
+
+### AI runtime
+
+<Update label="2025-06-29" description="Shipped">
+  Agent runs with cost governance, SiliconFlow-only provider, work graph linking.
+</Update>
+
+- Migration: `20250629120000_ai_runtime_and_work_graph.sql`
+- New tables: `agent_runs`, `agent_run_steps`, `ai_usage_events`, `workspace_ai_settings`
+- Provider migration: `20250629140000_siliconflow_only_providers.sql`
+- Settings backfill: `20250629180000_backfill_workspace_ai_settings.sql`
+- PRD: [AI runtime](/prds/ai-runtime)
+
+### Debug tooling
+
+- Debug terminal with trace collection
+- `X-AdeHQ-Debug` header for extended API error payloads
+- Improved agent run error messages (service role key hints)
+
+### SiliconFlow model tuning
+
+- Default models updated to DeepSeek-V4-Flash, DeepSeek-V3, Qwen3-Coder, MiniMax-M2.5
+- Model catalog with mode → env var mapping
+- Settings test provider panel
+
+---
+
+## 2025-06-27 — Production alignment
+
+<Update label="2025-06-27" description="Shipped">
+  Production/demo separation, workspace mode, member status tracking.
+</Update>
+
+- Migration: `20250627120000_align_production_schema.sql`
+- Demo mode gated by `NEXT_PUBLIC_ENABLE_DEMO_MODE` (default off)
+- Production workspaces start empty
+
+---
+
+## Initial release
+
+<Update label="2025-06" description="Initial">
+  AdeHQ AI workforce workspace — auth, onboarding, rooms, workforce, work graph.
+</Update>
+
+- Email/password auth via Supabase
+- Onboarding wizard (hire employee, create room)
+- Project rooms with messaging
+- AI employees with role templates
+- Tasks, memory, approvals, work log
+- Simulated calls and tool catalog
+- Vercel deployment at `ade-hq-eight.vercel.app`
+
+---
+
+## Documentation
+
+<Update label="2025-06-29" description="Added">
+  Internal developer docs in `docs/` directory, synced to Mintlify.
+</Update>
+
+- Platform overview and architecture
+- PRDs for messaging, AI runtime, workforce, auth
+- Full API reference
+- Database schema and migration history
+- Development setup and integration guides
+
+## How to update this changelog
+
+When shipping a feature:
+
+1. Add an `<Update>` block with date and status
+2. Link to the relevant PRD if one exists
+3. List migrations, new APIs, and UI changes
+4. Update feature docs if behavior changed
+
+Keep entries aligned with git commits and migration files so the docs reflect what actually shipped.

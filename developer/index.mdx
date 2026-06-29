@@ -1,0 +1,54 @@
+---
+title: "Developer docs"
+description: "Internal documentation for the AdeHQ AI workforce platform."
+---
+
+Engineering reference for the AdeHQ platform — architecture, PRDs, APIs, database schema, and integrations. Product guides for end users live under the **Documentation** tab.
+
+<CardGroup cols={2}>
+  <Card title="Platform overview" icon="layers" href="/platform/overview">
+    What AdeHQ is, who it's for, and how the major systems connect.
+  </Card>
+  <Card title="Architecture" icon="git-branch" href="/platform/architecture">
+    Next.js App Router, Supabase, SiliconFlow, and the AI message pipeline.
+  </Card>
+  <Card title="API reference" icon="square-terminal" href="/api/overview">
+    All route handlers, auth requirements, request/response shapes.
+  </Card>
+  <Card title="Local setup" icon="terminal" href="/development/setup">
+    Run the app locally with Supabase and SiliconFlow configured.
+  </Card>
+</CardGroup>
+
+## Current platform status
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Auth & onboarding | Shipped | Email/password via Supabase, multi-workspace |
+| Rooms & topics (Messaging v2) | Shipped | Zulip-style threads, AI participation modes |
+| AI runtime | Shipped | SiliconFlow-only live provider, cost guardrails |
+| Workforce | Shipped | Hire, configure, mention in rooms |
+| Work graph | Shipped | Tasks, memory, approvals, work log linked to agent runs |
+| Demo mode | Dev-only | Gated by `NEXT_PUBLIC_ENABLE_DEMO_MODE` |
+| Real integrations | Not built | Slack, GitHub, billing, MCP, real calls |
+
+## How to use these docs
+
+<Steps>
+  <Step title="Start with PRDs for product intent">
+    Read the [Messaging v2 PRD](/prds/messaging-v2) and [AI runtime PRD](/prds/ai-runtime) to understand *why* features exist before diving into implementation.
+  </Step>
+  <Step title="Trace a message end-to-end">
+    Follow the flow in [Messaging](/features/messaging) from `RoomChat` → API → agent run → SiliconFlow reply.
+  </Step>
+  <Step title="Look up endpoints">
+    Use the [API reference](/api/overview) when wiring new clients or debugging production.
+  </Step>
+  <Step title="Check schema changes">
+    Every migration is listed in [Database migrations](/database/migrations) with what it adds.
+  </Step>
+</Steps>
+
+<Note>
+These docs live in [NexCache-Official/docs](https://github.com/NexCache-Official/docs) and deploy via Mintlify. Update them alongside code changes in [NexCache-Official/AdeHQ](https://github.com/NexCache-Official/AdeHQ).
+</Note>

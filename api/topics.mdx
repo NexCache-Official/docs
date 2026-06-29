@@ -1,0 +1,103 @@
+---
+title: "Topics API"
+description: "Update, archive, manage members, read cursors, and summarize topics."
+---
+
+## PATCH /api/topics/:topicId
+
+Update topic metadata.
+
+**Auth:** Topic creator or workspace admin. Archive requires admin.
+
+**Request body (all optional):**
+
+```json
+{
+  "title": "string",
+  "status": "active | paused | resolved | archived",
+  "priority": "low | normal | high | urgent",
+  "summary": "string",
+  "aiParticipationMode": "manual_only | smart_assist | active_team"
+}
+```
+
+**Source:** `src/app/api/topics/[topicId]/route.ts`
+
+---
+
+## DELETE /api/topics/:topicId
+
+Soft-archive a topic. Cannot archive the General topic.
+
+**Auth:** Topic creator or workspace admin.
+
+**Response:** `{ "ok": true }`
+
+---
+
+## POST /api/topics/:topicId/members
+
+Add an AI employee to a topic.
+
+**Auth:** Workspace member with room access.
+
+**Request body:**
+
+```json
+{
+  "employeeId": "string (required)",
+  "notificationLevel": "all | mentions | none (optional)"
+}
+```
+
+**Source:** `src/app/api/topics/[topicId]/members/route.ts`
+
+---
+
+## POST /api/topics/:topicId/read
+
+Update the caller's read cursor for unread tracking.
+
+**Auth:** Workspace member with room access.
+
+**Request body:**
+
+```json
+{
+  "lastReadMessageId": "uuid (required)"
+}
+```
+
+Updates `topic_members.last_read_message_id` for the authenticated user.
+
+**Source:** `src/app/api/topics/[topicId]/read/route.ts`
+
+---
+
+## POST /api/topics/:topicId/summarize
+
+Generate an LLM summary of the topic's recent messages.
+
+**Auth:** Workspace member with room access.
+
+**Request body:**
+
+```json
+{
+  "saveToMemory": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "ok": true,
+  "summary": "Topic summary text...",
+  "memoryEntryId": "uuid (if saveToMemory)"
+}
+```
+
+Uses SiliconFlow via the model router. Saves summary to `room_topics.summary` and optionally creates a draft memory entry.
+
+**Source:** `src/app/api/topics/[topicId]/summarize/route.ts`

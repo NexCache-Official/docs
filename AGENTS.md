@@ -1,33 +1,52 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
+# AdeHQ documentation
 
-# Documentation project instructions
+Internal and product documentation for [AdeHQ](https://ade-hq-eight.vercel.app), built on [Mintlify](https://mintlify.com).
 
-## About this project
+## Repository structure
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+| Tab | Audience | Contents |
+|-----|----------|----------|
+| **Documentation** | Product users | Quickstart, concepts, guides, account, FAQ |
+| **Developer** | Engineering team | Architecture, PRDs, platform internals, changelog |
+| **API reference** | Engineering team | All route handlers, auth, request/response shapes |
+| **Database** | Engineering team | Postgres schema, migrations |
+| **Development** | Engineering team | Local setup, env vars, debugging, integrations |
+
+Source code lives in [NexCache-Official/AdeHQ](https://github.com/NexCache-Official/AdeHQ).
 
 ## Terminology
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- **Workspace** — tenant boundary (not "project" or "organization")
+- **AI employee** — configured agent with role, model tier, and permissions (not "bot" or "assistant")
+- **Project room** — channel or DM where collaboration happens
+- **Topic** — thread inside a room (Messaging v2)
+- **Agent run** — queued or executing AI response job
+- **Work graph** — tasks, memory, approvals, and work log linked to agent runs
 
-## Style preferences
+## Style
 
-{/* Add any project-specific style rules below */}
+- Second person ("you"), active voice
+- Sentence case for headings
+- User-facing docs: outcome-focused, no internal file paths
+- Developer docs: include file paths, API shapes, migration names
 
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
+## Updating docs
 
-## Content boundaries
+When shipping a feature in AdeHQ:
 
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+1. Update the relevant PRD or feature page under `prds/` or `features/`
+2. Add API changes to `api/`
+3. Add migrations to `database/migrations.mdx`
+4. Add a changelog entry in `changelog.mdx`
+5. Update user-facing guides if the product surface changed
+
+## Local preview
+
+```bash
+npm i -g mint
+mint dev
+```
+
+## Mintlify MCP
+
+Use the Mintlify dashboard MCP in Cursor to edit pages and open PRs on this repo. Credentials: `MINTLIFY_CLIENT_ID` and `MINTLIFY_CLIENT_SECRET` in AdeHQ `.env.local`.

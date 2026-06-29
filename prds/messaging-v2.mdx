@@ -1,0 +1,90 @@
+---
+title: "PRD: Messaging v2 (topics)"
+description: "Product requirements for topic-based rooms — Zulip-inspired threads inside AdeHQ channels."
+tag: "SHIPPED"
+---
+
+## Problem
+
+Flat room chat does not scale for AI workforce collaboration. Multiple workstreams in one channel become noisy, context is lost, and AI employees lack scoped context for relevant responses.
+
+## Solution
+
+Introduce **topics** — threads inside project rooms. Each topic carries its own message history, member list, stats, and AI participation settings. The work graph (tasks, memory, approvals) links to topics.
+
+## Goals
+
+- Organize conversation by workstream without creating a new room per topic
+- Give AI employees scoped context (topic messages + summary) for better replies
+- Support Zulip-style unread tracking
+- Enable AI participation modes per topic
+
+## Non-goals
+
+- Full Zulip parity (streams, user groups, email gateway)
+- Cross-room topic linking
+- Topic-level permissions beyond room membership
+
+## User stories
+
+| As a… | I want to… | So that… |
+|-------|------------|----------|
+| Team member | Create a topic from a template | I can start structured workstreams quickly |
+| Team member | See unread counts per topic | I know what needs attention |
+| Team member | Archive resolved topics | The sidebar stays clean |
+| Admin | Set AI participation mode per topic | I control when AI joins without @mentions |
+| AI employee | Receive topic summary + recent messages | My replies are contextually relevant |
+
+## Feature spec
+
+### Topics
+
+- Every room auto-creates a **General** topic (cannot be archived)
+- Topics have: title, status, priority, summary, counters, metadata
+- Status values: `active`, `paused`, `resolved`, `archived`
+- Unique title per room (case-insensitive)
+
+### Topic members
+
+- Track `last_read_message_id` for unread badges
+- AI employees can be added to topics explicitly
+
+### AI participation modes
+
+Stored in `topic.metadata.aiParticipationMode`:
+
+| Mode | Behavior |
+|------|----------|
+| `manual_only` | AI responds only when @mentioned or in DMs |
+| `smart_assist` | AI may join based on keyword/role heuristics |
+| `active_team` | More aggressive smart participation |
+
+### Topic templates
+
+Predefined in `src/lib/topics.ts` (`TOPIC_TEMPLATES`) — e.g. Bug fix, Feature spec, Research.
+
+### Summarization
+
+`POST /api/topics/:id/summarize` generates an LLM summary stored on the topic and optionally as draft memory.
+
+## Technical implementation
+
+| Component | Path |
+|-----------|------|
+| Migration | `supabase/migrations/20250629160000_room_topics_messaging_v2.sql` |
+| Topic helpers | `src/lib/server/topic-helpers.ts` |
+| Topic stats | `src/lib/server/topic-stats.ts` |
+| UI | `TopicList`, `TopicPanel`, `NewTopicModal` |
+| API | `/api/rooms/:id/topics`, `/api/topics/:id/*` |
+
+## Success metrics
+
+- Messages persist with `topic_id` FK
+- Unread counts update via `topic_members.last_read_message_id`
+- AI responses include topic context in prompts
+- General topic backfill completes for existing rooms
+
+## Open items
+
+- `schema.sql` bootstrap does not yet include topic tables — production must apply migration `20250629160000`
+- Reactions table exists but UI is minimal

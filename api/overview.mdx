@@ -1,0 +1,88 @@
+---
+title: "API overview"
+description: "All AdeHQ API route handlers — methods, auth, and purpose."
+---
+
+## Base URL
+
+```
+https://ade-hq-eight.vercel.app/api   # production
+http://localhost:3000/api             # local dev
+```
+
+All routes use Next.js Route Handlers (`src/app/api/`). There are no Server Actions.
+
+## Authentication
+
+Most endpoints require:
+
+```
+Authorization: Bearer {supabase_access_token}
+```
+
+See [Authentication](/api/authentication) for the full auth flow and role requirements.
+
+## Endpoint summary
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| **POST** | `/rooms/:roomId/messages` | Member + room send | Save human message, queue AI runs |
+| **GET** | `/rooms/:roomId/topics` | Member + room access | List topics |
+| **POST** | `/rooms/:roomId/topics` | Member + room access | Create topic |
+| **PATCH** | `/topics/:topicId` | Creator or admin | Update topic |
+| **DELETE** | `/topics/:topicId` | Creator or admin | Archive topic |
+| **POST** | `/topics/:topicId/members` | Member + room access | Add AI to topic |
+| **POST** | `/topics/:topicId/read` | Member + room access | Update read cursor |
+| **POST** | `/topics/:topicId/summarize` | Member + room access | LLM topic summary |
+| **POST** | `/agent-runs/:runId/process` | Member + room access | Execute queued AI run |
+| **POST** | `/employees/:employeeId/respond` | Member + room send | Direct AI response |
+| **GET** | `/ai/runtime` | Owner/admin | Runtime snapshot |
+| **POST** | `/ai/test-provider` | Owner/admin | Test SiliconFlow |
+| **GET** | `/workspaces/:id/ai-settings` | Owner/admin | Load AI settings |
+| **PATCH** | `/workspaces/:id/ai-settings` | Owner/admin | Update AI settings |
+| **POST** | `/auth/resend-confirmation` | Public | Resend signup email |
+| **POST** | `/dev/seed-demo` | None (dev only) | Demo seed introspection |
+
+## Error format
+
+Most endpoints return JSON errors:
+
+```json
+{
+  "ok": false,
+  "code": "not_room_member",
+  "error": "You are not a member of this room.",
+  "details": {}
+}
+```
+
+Message endpoints use structured codes from `message-errors.ts`. Agent process endpoints may include `debug` when `X-AdeHQ-Debug: true`.
+
+## Runtime configuration
+
+All API routes use:
+
+```typescript
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+```
+
+## Detailed references
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/api/authentication">
+    Bearer tokens, roles, room access checks.
+  </Card>
+  <Card title="Rooms" icon="message-square" href="/api/rooms">
+    Messages and topic listing/creation.
+  </Card>
+  <Card title="Topics" icon="list" href="/api/topics">
+    CRUD, members, read cursors, summarize.
+  </Card>
+  <Card title="Agents" icon="bot" href="/api/agents">
+    Agent run processing and direct respond.
+  </Card>
+  <Card title="AI settings" icon="settings" href="/api/ai-settings">
+    Runtime status, provider test, workspace limits.
+  </Card>
+</CardGroup>

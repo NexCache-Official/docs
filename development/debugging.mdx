@@ -1,0 +1,116 @@
+---
+title: "Debugging"
+description: "Debug tracing, error codes, and common troubleshooting for AdeHQ development."
+---
+
+## Debug terminal
+
+In development, AdeHQ includes a debug terminal accessible from the top bar.
+
+Components:
+
+- `DebugProvider` — context for debug state
+- `DebugTerminal` — floating terminal UI
+- `debug-trace.ts` — trace collection
+
+Enable extended API error payloads:
+
+```
+X-AdeHQ-Debug: true
+```
+
+The client attaches this header automatically when debug mode is active.
+
+## Message error codes
+
+Structured errors from `src/lib/server/message-errors.ts`:
+
+| Code | HTTP | Meaning |
+|------|------|---------|
+| `message_required` | 400 | Empty message content |
+| `room_not_found` | 404 | Room ID doesn't exist |
+| `not_room_member` | 403 | User can't send in this room |
+| `topic_archived` | 400 | Topic is archived |
+| `topic_not_in_room` | 404 | Topic doesn't belong to room |
+
+## Common issues
+
+### AI doesn't respond
+
+<AccordionGroup>
+  <Accordion title="SiliconFlow not configured">
+    Check Settings → AI Runtime. `configured` should be `true`. Set `SILICONFLOW_API_KEY` in env vars.
+  </Accordion>
+  <Accordion title="Service role key missing">
+    Agent processing returns 500 with hint: "SUPABASE_SERVICE_ROLE_KEY is not set." Add it to Vercel env vars.
+  </Accordion>
+  <Accordion title="No responders selected">
+    Check topic AI participation mode. In `manual_only`, AI only responds to @mentions or in DMs.
+  </Accordion>
+  <Accordion title="Cost limit exceeded">
+    Run status becomes `blocked`. Check workspace AI settings or wait for daily reset.
+  </Accordion>
+  <Accordion title="Employee paused or archived">
+    Check employee status on workforce profile page.
+  </Accordion>
+</AccordionGroup>
+
+### Messages don't persist
+
+1. Confirm you're logged in (not demo mode unless intended)
+2. Check browser console for API errors
+3. Verify Supabase RLS — user must be workspace member
+4. Check room membership
+
+### Realtime not syncing
+
+1. Confirm `backend === "supabase"` in store
+2. Check Supabase Realtime is enabled for workspace tables
+3. Open second tab and send from first — should update within ~250ms (debounce)
+
+### Auth redirect loops
+
+1. Verify `NEXT_PUBLIC_SITE_URL` matches your deployment URL
+2. Check Supabase redirect URLs include your domain with `/**`
+3. Confirm email is verified before accessing app routes
+
+## AI runtime inspection
+
+Owner/admin can view runtime state:
+
+```
+GET /api/ai/runtime
+Authorization: Bearer {token}
+```
+
+Or use Settings → AI Runtime panel in the UI.
+
+## Work log
+
+Check `/work-log` for AI action history. Look for:
+
+- `live` vs `fallback` model calls
+- Permission blocks
+- Failed runs with error details
+
+## Database debugging
+
+Use Supabase dashboard → Table Editor or SQL editor to inspect:
+
+- `agent_runs` — run status and errors
+- `agent_run_steps` — step-by-step execution log
+- `ai_usage_events` — token/cost tracking
+- `messages` — verify `topic_id` and `agent_run_id` FKs
+
+## Dev-only endpoints
+
+```bash
+# Demo seed introspection (development only)
+curl -X POST http://localhost:3000/api/dev/seed-demo
+```
+
+## Related
+
+- [Agents API](/api/agents) — process endpoint errors
+- [SiliconFlow integration](/integrations/siliconflow)
+- [Environment variables](/development/environment)
