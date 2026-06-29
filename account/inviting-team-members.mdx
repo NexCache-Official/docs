@@ -1,0 +1,109 @@
+---
+title: "Invite Team Members to Your AdeHQ Workspace"
+sidebarTitle: "Team Members"
+description: "Bring your human teammates into AdeHQ, assign them the right permissions, and manage the full member lifecycle from invitation to removal."
+---
+
+AdeHQ is designed for teams — real people collaborating alongside AI employees inside shared project rooms. Inviting a teammate takes less than a minute, and they'll be working with your AI workforce straight away.
+
+## Permission Levels
+
+Before you send an invitation, choose the role that matches what your teammate needs to do.
+
+<CardGroup cols={3}>
+  <Card title="Owner" icon="crown">
+    Full control over the workspace, including billing, deletion, and all settings. There is one Owner per workspace, and ownership can be transferred.
+  </Card>
+  <Card title="Admin" icon="shield-halved">
+    Can manage members, hire and configure AI employees, create project rooms, and adjust workspace settings. Cannot access billing or delete the workspace.
+  </Card>
+  <Card title="Member" icon="user">
+    Can work inside project rooms they are added to, interact with AI employees, and contribute to project memory. Cannot change workspace-level settings.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Follow the principle of least privilege — grant teammates the lowest role that still lets them do their job. You can promote them later if needed.
+</Tip>
+
+---
+
+## Inviting a Teammate
+
+<Steps>
+  <Step title="Open Workspace Settings">
+    Click your workspace name in the top-left corner of the dashboard and select **Settings** from the dropdown.
+  </Step>
+  <Step title="Go to the Members Section">
+    In the Settings sidebar, click **Members**. You'll see a list of everyone currently in the workspace, along with their roles and join dates.
+  </Step>
+  <Step title="Click Invite Member">
+    Click the **Invite Member** button in the top-right corner of the Members page.
+  </Step>
+  <Step title="Enter Their Email and Role">
+    Type the teammate's email address into the input field. Use the **Role** dropdown to select **Admin** or **Member**. You can invite multiple people at once by adding more email addresses.
+  </Step>
+  <Step title="Send the Invitation">
+    Click **Send Invite**. AdeHQ emails the invitation immediately. The invite link is valid for **72 hours**.
+  </Step>
+  <Step title="Teammate Accepts and Joins">
+    Your teammate receives an email with a **Join Workspace** button. If they already have an AdeHQ account, they're taken straight to the workspace. If not, they complete a brief sign-up at [ade-hq-eight.vercel.app/signup](https://ade-hq-eight.vercel.app/signup) and are then dropped into the workspace automatically.
+  </Step>
+</Steps>
+
+<Info>
+  Pending invitations appear at the top of the Members list with a **Pending** badge until the teammate accepts or the invitation expires.
+</Info>
+
+---
+
+## Resending or Cancelling an Invitation
+
+If a teammate hasn't received their invite or the link has expired, you can resend it in a few clicks.
+
+<Steps>
+  <Step title="Find the Pending Invitation">
+    Go to **Settings → Members** and locate the entry with the **Pending** badge.
+  </Step>
+  <Step title="Resend or Cancel">
+    Click the **⋯** (more options) menu next to the pending invite and choose either **Resend Invitation** or **Cancel Invitation**.
+  </Step>
+</Steps>
+
+<Note>
+  Resending generates a fresh 72-hour link and invalidates the previous one. If your teammate can't find the email, ask them to check their spam or promotions folder.
+</Note>
+
+---
+
+## Changing a Member's Role
+
+<Steps>
+  <Step title="Open the Members List">
+    Navigate to **Settings → Members**.
+  </Step>
+  <Step title="Edit the Role">
+    Click the **⋯** menu next to the member's name and select **Change Role**. Choose the new role from the dropdown and confirm.
+  </Step>
+</Steps>
+
+---
+
+## Removing a Team Member
+
+<Warning>
+  Removing a member immediately revokes their access to the workspace and all project rooms. Any project memory or contributions they made remain intact — only their access is removed.
+</Warning>
+
+<Steps>
+  <Step title="Locate the Member">
+    Go to **Settings → Members** and find the person you want to remove.
+  </Step>
+  <Step title="Remove Them">
+    Click the **⋯** menu next to their name and select **Remove Member**. Confirm the action in the dialogue that appears.
+  </Step>
+</Steps>
+
+<Tip>
+  If a teammate is leaving your organisation, remove them from the workspace before deactivating their corporate email — otherwise their pending session may persist briefly until it expires.
+</Tip>

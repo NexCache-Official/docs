@@ -1,0 +1,108 @@
+---
+title: "Assign Tools to Your AI Employees"
+sidebarTitle: "Assigning Tools"
+description: "Learn how to equip AI employees with the right tools for their role, and understand which actions may require your approval before they execute."
+---
+
+Out of the box, an AI employee can hold a conversation, reason through problems, and remember what matters. Tools take them further — they give your AI employee the ability to act: searching the web, reading files, sending emails, executing code, and more. This guide explains how to assign tools, how to match them to roles effectively, and how to keep your configuration clean as your team grows.
+
+## What Tools Do
+
+A tool is a discrete capability that an AI employee can invoke during a task. Without tools, your AI employee is limited to generating text. With tools, they can reach outside the conversation to take real actions or retrieve real information.
+
+Tools typically fall into a few categories:
+
+<CardGroup cols={2}>
+  <Card title="Information Retrieval" icon="globe">
+    Web search, document lookup, database queries — anything that fetches live or stored data.
+  </Card>
+  <Card title="Communication" icon="envelope">
+    Sending emails, posting messages, drafting and delivering notifications.
+  </Card>
+  <Card title="Code & Computation" icon="terminal">
+    Running scripts, executing code, analyzing data programmatically.
+  </Card>
+  <Card title="Integrations" icon="plug">
+    Connecting to external platforms like GitHub, Slack, or your CRM.
+  </Card>
+</CardGroup>
+
+<Note>
+  Some tools can trigger irreversible actions — like sending an email or posting to a channel. These tools will automatically prompt an approval request before your AI employee carries out the action. See the [Approval Workflows guide](/guides/approval-workflows) for details.
+</Note>
+
+## How to Assign Tools to an AI Employee
+
+<Steps>
+  <Step title="Open the employee's settings">
+    Navigate to **AI Employees** in the sidebar and click on the employee you want to configure. From their profile page, select the **Settings** or **Edit** option to open their configuration panel.
+  </Step>
+
+  <Step title="Go to the Tools section">
+    Within the configuration panel, find the **Tools** section. You'll see a list of available tools alongside any tools already assigned to this employee.
+  </Step>
+
+  <Step title="Select tools to assign">
+    Toggle on the tools you want this employee to have access to. Each tool includes a short description of what it does and whether it may trigger an approval request.
+  </Step>
+
+  <Step title="Save your changes">
+    Click **Save** to apply the updated tool configuration. Changes take effect immediately — the AI employee will use their new tools in the next task or conversation they're involved in.
+  </Step>
+</Steps>
+
+## Matching Tools to Roles
+
+Assigning too many tools can lead to unfocused behavior. Assign tools that are directly relevant to the employee's role and the work they'll be doing. Here are some starting points:
+
+<CardGroup cols={2}>
+  <Card title="Marketing Manager" icon="bullhorn">
+    **Recommended:** Web search, email, content publishing tools. Gives them the ability to research trends, draft campaigns, and push content.
+  </Card>
+  <Card title="Engineering Lead" icon="code">
+    **Recommended:** Code execution, GitHub integration, documentation lookup. Keeps their work technical and traceable.
+  </Card>
+  <Card title="Research Analyst" icon="magnifying-glass">
+    **Recommended:** Web search, document reader, data export. Lets them gather, synthesize, and surface findings efficiently.
+  </Card>
+  <Card title="Customer Support" icon="headset">
+    **Recommended:** Email, CRM lookup, knowledge base search. Equips them to respond accurately and escalate when needed.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Start with fewer tools and expand as you see how the employee works. A tightly scoped toolset produces more predictable behavior and makes it easier to audit what actions were taken and why.
+</Tip>
+
+## Removing or Updating Tools
+
+You can modify an employee's tools at any time without affecting their memory or conversation history.
+
+<Steps>
+  <Step title="Return to the employee's Settings">
+    Navigate to **AI Employees**, select the employee, and open their configuration panel.
+  </Step>
+
+  <Step title="Toggle off tools you want to remove">
+    In the **Tools** section, deselect any tools you want to revoke. The employee will lose access to those capabilities immediately after saving.
+  </Step>
+
+  <Step title="Save your changes">
+    Click **Save**. The updated tool configuration takes effect on the next interaction.
+  </Step>
+</Steps>
+
+<Warning>
+  Removing a tool does not undo actions the employee already completed using that tool. If an email was sent or code was executed, those actions remain. Review the approval workflow settings for sensitive tools to prevent unintended actions before they happen.
+</Warning>
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Set Up Approval Workflows" icon="shield-check" href="/guides/approval-workflows">
+    Control which tool actions require your sign-off before they execute.
+  </Card>
+  <Card title="Work in Project Rooms" icon="door-open" href="/guides/working-in-project-rooms">
+    Put your configured AI employees to work on real tasks inside a project room.
+  </Card>
+</CardGroup>

@@ -1,13 +1,11 @@
 {
-  "$schema": "https://mintlify.com/docs.json",
+  "projectType": "saas",
+  "projectName": "AdeHQ",
+  "projectDescription": "AdeHQ is an AI workforce platform that lets you hire AI employees with real roles and tools, manage them in project rooms, and collaborate in real time.",
   "theme": "luma",
-  "name": "AdeHQ",
-  "colors": {
-    "primary": "#6C47FF",
-    "light": "#8B6FFF",
-    "dark": "#4B2EE8"
-  },
-  "favicon": "/favicon.svg",
+  "primaryColor": "#6C47FF",
+  "lightColor": "#8B6FFF",
+  "darkColor": "#4B2EE8",
   "navigation": {
     "tabs": [
       {
@@ -60,20 +58,22 @@
       }
     ]
   },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:support@adehq.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Open AdeHQ",
-      "href": "https://ade-hq-eight.vercel.app"
-    }
-  },
-  "footer": {
-    "socials": {}
-  }
+  "keyFeatures": [
+    "Hire AI employees with defined roles and tool access",
+    "Project rooms for focused AI-human collaboration",
+    "Persistent project memory that retains decisions and context",
+    "Approval workflows that pause AI actions requiring human sign-off",
+    "Simulated calls to interact with AI employees conversationally",
+    "Real-time team collaboration powered by Supabase",
+    "Workspace management with team invitations"
+  ],
+  "publicApiSurface": [
+    "Workspace creation and configuration",
+    "AI employee hiring and role assignment",
+    "Tool assignment to AI employees",
+    "Project room creation and management",
+    "Approval request handling",
+    "Simulated call interface",
+    "Team member invitation and access control"
+  ]
 }

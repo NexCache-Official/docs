@@ -1,0 +1,128 @@
+---
+title: "Troubleshoot Common AdeHQ Issues"
+sidebarTitle: "Troubleshooting"
+description: "Step-by-step fixes for the most frequent AdeHQ problems — from login failures and missing emails to unresponsive AI employees and call issues."
+---
+
+Most issues in AdeHQ can be resolved in a couple of minutes with the steps below. Work through the relevant section and you'll be back up and running quickly.
+
+<Note>
+  If you've followed the steps for your issue and it's still not resolved, contact our support team at **support@adehq.com** with a brief description of the problem and your workspace name. We aim to respond within one business day.
+</Note>
+
+---
+
+<Accordion title="Can't log in">
+  **Problem:** You're unable to sign in to your AdeHQ account — you may see an "Invalid credentials" error, a blank page, or a redirect loop.
+
+  **Solutions:**
+
+  1. **Check your email address.** Make sure you're using the exact email you signed up with. Typos are the most common cause of login failures.
+
+  2. **Reset your password.** If you've forgotten your password, click **Forgot password?** on the [login page](https://ade-hq-eight.vercel.app/login) and follow the reset flow.
+
+  3. **Confirm your email.** If you signed up recently and haven't clicked the confirmation link in your welcome email, your account may not be activated yet. Check your inbox (and spam folder) for a confirmation email from AdeHQ and click the link inside.
+
+  4. **Check your workspace URL.** If you're accessing AdeHQ via a direct workspace link and see a "Workspace not found" error, verify the workspace slug with the person who invited you. Workspace slugs are case-sensitive.
+
+  5. **Clear browser cache and cookies.** A stale session cookie can prevent a fresh login. Clear your cache and try again in a private/incognito window.
+
+  6. **Social login mismatch.** If you signed up with Google or another provider, make sure you're clicking the correct **Sign in with [Provider]** button rather than entering a password.
+</Accordion>
+
+<Accordion title="Didn't receive confirmation email">
+  **Problem:** You signed up for AdeHQ but the confirmation email never arrived.
+
+  **Solutions:**
+
+  1. **Check your spam or promotions folder.** Email filters frequently route transactional emails away from your main inbox. Search for "AdeHQ" or the sender domain in all folders.
+
+  2. **Wait a few minutes.** Email delivery can occasionally be delayed by up to 5–10 minutes depending on your mail provider.
+
+  3. **Resend the confirmation email.** Go to the [login page](https://ade-hq-eight.vercel.app/login), enter your email address and password, and if your account is unconfirmed, AdeHQ will prompt you with a **Resend confirmation email** link. Click it to trigger a fresh email.
+
+  4. **Check for typos in your email.** If you mistyped your email during sign-up, the confirmation will have gone to a non-existent address. In this case, [sign up again](https://ade-hq-eight.vercel.app/signup) with the correct email.
+
+  5. **Corporate email filters.** If you're using a work email, your company's email gateway may be blocking external messages. Ask your IT team to allowlist emails from AdeHQ's sending domain, or try signing up with a personal email address temporarily.
+</Accordion>
+
+<Accordion title="AI employee not responding">
+  **Problem:** You've sent a message or assigned a task to an AI employee, but they aren't replying or taking any action.
+
+  **Solutions:**
+
+  1. **Refresh the page.** A stale WebSocket connection can cause the UI to appear frozen. Reload the project room and resend your message.
+
+  2. **Check the approval queue.** The AI employee may be waiting for your approval before proceeding. Look for a notification badge in the top-right corner or navigate to **Project Room → Approvals** to see if a pending request is blocking them.
+
+  3. **Review tool configuration.** If the AI employee needs a tool (e.g., an API integration) to complete the task, verify the tool is connected and authorised under the employee's **Settings → Tools** panel. A disconnected tool will cause the employee to stall silently.
+
+  4. **Check the employee's status.** Navigate to the employee's profile. If their status shows **Paused** or **Inactive**, click **Resume** to re-activate them.
+
+  5. **Try a simpler prompt.** Highly ambiguous or very long instructions can occasionally cause delays. Break the task into smaller steps and send them one at a time.
+</Accordion>
+
+<Accordion title="Approval requests not appearing">
+  **Problem:** You know an AI employee should be requesting approval for an action, but you're not seeing any notifications.
+
+  **Solutions:**
+
+  1. **Check browser notification permissions.** AdeHQ uses browser notifications to alert you to pending approvals. Make sure you've granted notification permissions for the AdeHQ domain. In Chrome, go to **Settings → Privacy and Security → Site Settings → Notifications** and ensure AdeHQ is set to **Allow**.
+
+  2. **Check in-app notification settings.** Go to **Profile → Notifications** and verify that **Approval Requests** notifications are turned on.
+
+  3. **Navigate directly to the Approvals tab.** In your project room, click the **Approvals** tab in the top navigation. Pending requests appear here even if the notification badge didn't show.
+
+  4. **Check your plan.** Certain approval workflows are only available on paid plans. If you're on the free tier and expecting advanced approval routing, review your plan limits under **Settings → Billing**.
+</Accordion>
+
+<Accordion title="Simulated call not starting">
+  **Problem:** You're trying to jump on a simulated call with your AI workforce, but the call fails to connect or the audio doesn't work.
+
+  **Solutions:**
+
+  1. **Grant microphone permissions.** Simulated calls require access to your microphone. When prompted by your browser, click **Allow**. If you previously denied the permission, update it in your browser's site settings:
+     - **Chrome:** Click the lock icon in the address bar → **Microphone** → **Allow**
+     - **Firefox:** Click the lock icon → **Connection secure** → **More information** → **Permissions**
+     - **Safari:** Go to **Safari → Settings for This Website** → allow microphone access
+
+  2. **Use a supported browser.** Simulated calls work best on the latest versions of **Google Chrome**, **Microsoft Edge**, and **Mozilla Firefox**. Safari has limited WebRTC support and may cause issues. If you're on Safari, switch to Chrome or Edge.
+
+  3. **Check that your microphone is connected and selected.** If you have multiple audio input devices, your browser may be using the wrong one. Click the microphone icon in the call interface to select the correct device.
+
+  4. **Disable conflicting browser extensions.** Extensions that intercept audio (e.g., noise cancellers, screen recorders) can block AdeHQ's call feature. Try starting the call in a private/incognito window where extensions are disabled.
+
+  5. **Check your internet connection.** Simulated calls require a stable connection with sufficient bandwidth. Run a quick speed test and ensure you're not on a heavily congested network.
+</Accordion>
+
+<Accordion title="Slow or missing real-time updates">
+  **Problem:** Messages, task updates, or changes made by teammates or AI employees aren't appearing promptly — or at all — in your project room.
+
+  **Solutions:**
+
+  1. **Check your internet connection.** Real-time updates rely on a persistent WebSocket connection. A weak or intermittent connection is the most common cause. Try switching from Wi-Fi to a wired connection, or move closer to your router.
+
+  2. **Refresh the browser tab.** Press `Cmd + R` (Mac) or `Ctrl + R` (Windows/Linux) to force a fresh connection. AdeHQ will re-sync the latest state of the project room on reload.
+
+  3. **Check AdeHQ system status.** If multiple team members are experiencing slow updates at the same time, there may be a platform-wide incident. Check the AdeHQ status page or contact support for a current update.
+
+  4. **Close unused tabs.** Having many active AdeHQ tabs open simultaneously can strain the real-time connection. Keep only the rooms you're actively working in open.
+
+  5. **Try a different browser.** If the issue persists across network changes, test in a different browser to rule out a browser-specific problem.
+</Accordion>
+
+<Accordion title="Can't invite a team member">
+  **Problem:** The **Invite Member** button is greyed out, or invitations you send are bouncing back as invalid.
+
+  **Solutions:**
+
+  1. **Check your permission level.** Only **Owners** and **Admins** can invite new members. If you're a Member, ask an Admin or the Owner to send the invitation on your behalf.
+
+  2. **Verify the email address.** Double-check that the email address you're entering is correctly formatted (e.g., `name@company.com` with no extra spaces or typos). AdeHQ validates the format before sending.
+
+  3. **Check your seat limit.** Your current plan may cap the total number of team members. If you've reached the limit, you'll need to upgrade your plan or remove an existing member before sending new invitations. Go to **Settings → Billing** to review your seat allocation.
+
+  4. **Check for a duplicate invitation.** If the person has already been invited and hasn't yet accepted, sending a second invitation to the same address may be blocked. Go to **Settings → Members**, find the pending invitation, and use the **Resend Invitation** option instead.
+
+  5. **Check the invitee's email domain.** Some workspaces are configured to restrict invitations to specific email domains. If your workspace has domain restrictions enabled, the invitee's email must match an approved domain. Review domain settings under **Settings → Security**.
+</Accordion>

@@ -1,0 +1,118 @@
+---
+title: "Managing AI Approval Requests in AdeHQ"
+sidebarTitle: "Approvals"
+description: "Understand how AdeHQ pauses AI employees before high-impact actions, and learn how to review, approve, or reject requests to stay in control."
+---
+
+AI employees in AdeHQ are built to be capable — but capability comes with responsibility. Before taking actions that could be difficult or impossible to undo, your AI employees will pause and request your approval. This keeps you in the loop on anything consequential, so the AI workforce acts as a force multiplier rather than a runaway process.
+
+## Why Approval Workflows Exist
+
+Some actions are easy to reverse. A draft can be deleted, a message in a room can be ignored. But other actions — sending an email to a client, posting content publicly, making a purchase, or submitting a form — have real-world consequences the moment they execute. Approval workflows create a deliberate checkpoint between "the AI decided to do something" and "the thing is done."
+
+This isn't a limitation. It's a feature that lets you deploy your AI employees confidently, knowing that the highest-stakes moments always have a human in the loop.
+
+## What Triggers an Approval Request
+
+An approval request is raised whenever an AI employee is about to execute a tool action that falls into a high-impact category. Common triggers include:
+
+<CardGroup cols={2}>
+  <Card title="Sending communications" icon="envelope">
+    Outbound emails, Slack messages, or notifications directed at real recipients outside the workspace.
+  </Card>
+  <Card title="Publishing content" icon="globe">
+    Posting to websites, social media, blogs, or any public-facing channel.
+  </Card>
+  <Card title="Financial actions" icon="credit-card">
+    Making purchases, submitting invoices, or interacting with payment systems.
+  </Card>
+  <Card title="Modifying external systems" icon="database">
+    Writing to databases, updating CRM records, pushing code to a live branch, or submitting pull requests.
+  </Card>
+</CardGroup>
+
+<Info>
+  Not every tool action requires approval — only those configured as high-impact for that AI employee. You control which actions trigger requests from each employee's settings.
+</Info>
+
+## How You Receive Approval Notifications
+
+When an AI employee raises an approval request, you'll be notified in the following ways:
+
+- **In-room notification:** A highlighted approval card appears in the project room's conversation thread at the point where the AI employee paused.
+- **Workspace notification:** An indicator appears in the main navigation to alert you that a pending approval is waiting.
+
+Both notification types link directly to the approval request so you can review it without hunting through conversation history.
+
+## How to Review, Approve, or Reject a Request
+
+<Steps>
+  <Step title="Open the approval request">
+    Click the notification or the approval card in the project room. The request will show you:
+    - The AI employee who raised it
+    - The specific action they want to take
+    - The tool they plan to use
+    - Any relevant content (e.g., the email they're about to send)
+  </Step>
+
+  <Step title="Review the details carefully">
+    Read through the full action the AI employee is proposing. Check the recipient, the content, and the intended outcome. If anything looks off, this is your chance to catch it before it happens.
+  </Step>
+
+  <Step title="Approve or reject">
+    - **Approve:** Click **Approve** to authorize the action. The AI employee will execute it immediately.
+    - **Reject:** Click **Reject** (or **Deny**) to block the action. You can optionally add a note explaining why, which the AI employee will use to adjust their approach.
+  </Step>
+
+  <Step title="Resume the workflow">
+    After you approve or reject, the AI employee receives the outcome and continues their work — either executing the approved action or taking a different path based on your rejection note.
+  </Step>
+</Steps>
+
+<Warning>
+  Approving an action is irreversible once confirmed. An email will be sent, a post will go live, or a record will be updated the moment you click Approve. Always read the full action details before approving, especially for communications sent to external recipients.
+</Warning>
+
+## How to Configure Approval Requirements
+
+You can control which actions require approval on a per-employee basis. This lets you give trusted, well-tested AI employees more autonomy while keeping tighter oversight on newer or higher-risk roles.
+
+<Steps>
+  <Step title="Open the employee's settings">
+    Go to **AI Employees**, select the employee you want to configure, and open their **Settings** panel.
+  </Step>
+
+  <Step title="Navigate to Approvals or Permissions">
+    Find the **Approvals** or **Tool Permissions** section within the settings panel.
+  </Step>
+
+  <Step title="Configure per-tool approval requirements">
+    For each tool assigned to this employee, you can toggle whether that tool's actions require approval before execution. Set high-impact tools (email, publishing, payments) to require approval and lower-risk tools (web search, read-only lookups) to auto-approve.
+  </Step>
+
+  <Step title="Save your configuration">
+    Click **Save** to apply the changes. The new approval settings take effect immediately.
+  </Step>
+</Steps>
+
+<Tip>
+  When you first hire a new AI employee, err on the side of requiring approval for more actions. As you build trust and observe how they work, you can selectively reduce approval requirements for routine, low-risk tasks.
+</Tip>
+
+## Best Practices
+
+- **Always review before approving sensitive actions.** Approvals are fast to click but consequences can be slow to undo. Take the extra ten seconds to read what you're authorizing.
+- **Use rejection notes.** When you reject a request, a clear note ("Don't send this to the full list — only send to opted-in subscribers") helps your AI employee learn and refine their approach.
+- **Audit your approval history.** Past approvals and rejections are logged and accessible from the project room. Review them periodically to spot patterns or misconfigurations.
+- **Start strict, loosen over time.** It's much easier to remove approval requirements than to undo an action that already executed.
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Assign Tools to AI Employees" icon="wrench" href="/guides/assigning-tools">
+    Understand which tools are available and how to match them to your AI employees' roles.
+  </Card>
+  <Card title="Work in Project Rooms" icon="door-open" href="/guides/working-in-project-rooms">
+    See how approval requests surface inside project room conversations.
+  </Card>
+</CardGroup>
