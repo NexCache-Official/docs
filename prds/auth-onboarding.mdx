@@ -27,19 +27,21 @@ Supabase email/password auth with email confirmation, multi-workspace support, a
 - Invite-only signup gating
 - Organization billing
 
-## User flow
+## Signup & onboarding flow (V16.5+)
 
 ```mermaid
 flowchart TD
-  A[Signup] --> B{Email confirmed?}
-  B -->|No| C[Check email / resend]
-  B -->|Yes| D[Login]
-  D --> E{onboarding_complete?}
-  E -->|No| F[Onboarding wizard]
-  F --> G[Hire employee + create room]
-  G --> H[Mark onboarding complete]
-  E -->|Yes| I[Dashboard]
-  H --> I
+  A[Signup — auth user only] --> B[Confirm email]
+  B --> C[Login — blocks if unconfirmed]
+  C --> D{Has workspace?}
+  D -->|No| E[/onboarding]
+  E --> F[POST /workspaces/bootstrap]
+  F --> G[Hire employee — creates DM]
+  G --> H[Create channel room]
+  H --> I[Persist to Supabase — V16.6]
+  I --> J[Mark onboarding_complete]
+  D -->|Yes| K[Dashboard]
+  J --> K
 ```
 
 ## Workspace model
@@ -67,9 +69,12 @@ Production users never see demo options.
 | Component | Path |
 |-----------|------|
 | Login / signup | `src/app/(auth)/login/page.tsx`, `signup/page.tsx` |
+| Email confirmation check | `src/lib/auth/session.ts` |
 | Email callback | `src/app/auth/callback/page.tsx` |
-| Resend API | `/api/auth/resend-confirmation` (public) |
-| Onboarding | `src/app/onboarding/page.tsx`, `OnboardingFlow.tsx` |
+| Resend API | `/api/auth/resend-confirmation` |
+| Workspace bootstrap | `/api/workspaces/bootstrap`, `workspace-bootstrap.ts` |
+| Tools catalog seed | `/api/tools/ensure-catalog`, `tool-catalog.ts` |
+| Onboarding | `OnboardingFlow.tsx` — 5 steps, Supabase persist (V16.6) |
 | AppShell gate | `src/components/AppShell.tsx` |
 | Active workspace | `src/lib/supabase/active-workspace.ts` |
 | Site URL | `NEXT_PUBLIC_SITE_URL` for redirect URLs |

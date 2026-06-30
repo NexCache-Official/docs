@@ -1,0 +1,167 @@
+---
+title: "Account & workspace API"
+description: "Account deletion, workspace deletion, bootstrap, and tools catalog endpoints."
+---
+
+## GET /api/account
+
+Load account deletion context — owned workspaces, membership counts, whether deletion is safe.
+
+**Auth:** Authenticated user.
+
+**Response:**
+
+```json
+{
+  "email": "user@example.com",
+  "ownedWorkspaces": [{ "id": "uuid", "name": "My Workspace" }],
+  "memberWorkspaceCount": 2,
+  "canDeleteAccount": true,
+  "warnings": []
+}
+```
+
+**Source:** `src/app/api/account/route.ts`
+
+---
+
+## DELETE /api/account
+
+Permanently delete the authenticated user's account.
+
+**Auth:** Authenticated user + **password re-authentication**.
+
+**Request body:**
+
+```json
+{
+  "confirmEmail": "user@example.com",
+  "password": "current-password",
+  "deleteOwnedWorkspaces": true
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `confirmEmail` | Yes | Must match account email exactly |
+| `password` | Yes | Current password for re-auth |
+| `deleteOwnedWorkspaces` | No | When true, deletes workspaces the user owns |
+
+**Success response:**
+
+```json
+{
+  "ok": true,
+  "deletedWorkspaceIds": ["uuid"]
+}
+```
+
+**Source:** `src/lib/server/account-lifecycle.ts`
+
+<Warning>
+Account deletion is irreversible. Requires password re-auth via `requirePasswordReauth()`.
+</Warning>
+
+---
+
+## DELETE /api/workspaces/:workspaceId
+
+Permanently delete a workspace and all cascaded data.
+
+**Auth:** Workspace member + **password re-authentication**.
+
+**Request body:**
+
+```json
+{
+  "confirmName": "My Workspace",
+  "password": "current-password"
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `confirmName` | Yes | Must match workspace name exactly |
+| `password` | Yes | Current password for re-auth |
+
+**Success response:**
+
+```json
+{
+  "ok": true,
+  "deletedWorkspaceId": "uuid",
+  "remainingWorkspaceIds": [],
+  "nextAction": "onboarding"
+}
+```
+
+`nextAction` is `"switch_workspace"` when the user has other workspaces, or `"onboarding"` when none remain.
+
+Requires RLS policy `workspaces_delete_owner` (migration `20250629200000`).
+
+**Source:** `src/app/api/workspaces/[workspaceId]/route.ts`
+
+---
+
+## POST /api/workspaces/bootstrap
+
+Create a workspace for a confirmed user who has none yet. Called during onboarding (V16.5+).
+
+**Auth:** Authenticated user with confirmed email.
+
+**Request body:**
+
+```json
+{
+  "workspaceName": "My Team"
+}
+```
+
+**Success response:**
+
+```json
+{
+  "ok": true,
+  "workspaceId": "uuid",
+  "created": true
+}
+```
+
+Idempotent — returns existing workspace if one already exists.
+
+**Source:** `src/lib/server/workspace-bootstrap.ts`
+
+<Note>
+Signup no longer creates a workspace immediately (V16.5). Workspace creation is deferred to onboarding via this endpoint.
+</Note>
+
+---
+
+## POST /api/tools/ensure-catalog
+
+Idempotent seed of the global `tools` catalog. Required before workspace setup can reference tools via FK.
+
+**Auth:** Authenticated user (uses service role internally).
+
+**Response:** `{ "ok": true }`
+
+**Source:** `src/lib/server/tool-catalog.ts`
+
+Called automatically during onboarding bootstrap. Migration `20250630000000` seeds 23 tools (GitHub, Notion, Slack, SiliconFlow, etc.).
+
+---
+
+## Password re-authentication
+
+Destructive operations require the user's current password in the request body. Validated by `requirePasswordReauth()` in `src/lib/supabase/auth-server.ts`:
+
+- Account deletion (`DELETE /api/account`)
+- Workspace deletion (`DELETE /api/workspaces/:id`)
+
+Returns 401 if password is missing or incorrect.
+
+## Related
+
+- [Account lifecycle PRD](/prds/account-lifecycle)
+- [Auth & onboarding PRD](/prds/auth-onboarding)
+- [Authentication](/api/authentication)

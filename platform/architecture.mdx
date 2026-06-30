@@ -29,88 +29,120 @@ src/
   lib/
     demo-store.tsx   central workspace state
     supabase/        client, persistence, auth-server
-    ai/              model routing, prompts, cost guard
-    server/          room access, message pipeline, topic helpers
+    ai/              model routing, prompts, normalization
+    server/          orchestrator, governance, message pipeline
+    rooms.ts         channel vs DM helpers
+    topic-ai-control.ts  runtime AI stop/pause
     types.ts         domain types
 supabase/
   schema.sql         bootstrap schema
-  migrations/        incremental patches
-docs/                this documentation (Mintlify)
+  migrations/        incremental patches (through V16.9)
 ```
 
-## Request flow: human message → AI reply
+Docs: [NexCache-Official/docs](https://github.com/NexCache-Official/docs)
+
+## Request flow: human message → AI reply (V16.9)
 
 ```mermaid
 sequenceDiagram
   participant UI as RoomChat
-  participant API as POST /api/rooms/:id/messages
+  participant API as POST /messages
+  participant Orch as conversation-orchestrator
   participant DB as Supabase Postgres
-  participant Proc as POST /api/agent-runs/:id/process
+  participant Poll as GET /agent-runs
+  participant Proc as POST /process
   participant SF as SiliconFlow
 
   UI->>API: content, topicId, mentionsJson
-  API->>DB: insert human message
-  API->>API: decideResponders()
-  API->>DB: queue agent_runs
-  API-->>UI: humanMessage + queuedRuns[]
-  loop Each queued run
-    UI->>Proc: workspaceId, mode
-    Proc->>DB: load run + context (service role)
+  par Parallel save
+    API->>DB: insertHumanMessage
+    API->>DB: loadRespondersContext
+  end
+  API->>Orch: planConversation()
+  Orch-->>API: collaborationPlan + decisions
+  API->>DB: queue agent_runs (with depends_on_run_id)
+  API-->>UI: humanMessage + queuedRuns + collaborationPlan
+  loop Client polling
+    UI->>Poll: processable runs?
+    Poll-->>UI: runs[]
+    UI->>Proc: process each run
     Proc->>SF: structured LLM call
-    Proc->>DB: save AI message, effects, usage
+    Proc->>DB: AI message + artifacts + usage
     Proc-->>UI: aiMessage
   end
   Note over UI,DB: Realtime pushes updates to other tabs
 ```
 
-## Responder selection
+Key change from V16.8: AI replies are **not returned inline** from the messages endpoint. The client polls and processes runs asynchronously.
 
-`decideResponders()` (`src/lib/server/decide-responders.ts`) determines which AI employees respond:
+## Conversation orchestration
 
-1. **Explicit mention** — `@Employee Name` in content or `mentionsJson`
-2. **Smart assist** — topic `aiParticipationMode` is `smart_assist` or `active_team`
-3. **DM default** — in a DM room on the General topic, the counterpart employee always responds
-4. **Slash command** — forced employee IDs from chat composer
+`planConversation()` in `conversation-orchestrator.ts` replaces simple `decideResponders()` for channel messages:
 
-Parallelism is capped by `workspace_ai_settings.max_parallel_runs` (default 3).
+1. Resolve @mentions in order
+2. Classify conversation mode (`direct_reply`, `lead_collaborator`, `panel_response`, etc.)
+3. Apply channel governance (cooldowns, greeting detection)
+4. Check topic AI controls (`aiStopped`, blocked employees)
+5. Build collaboration plan with participant roles
+
+Collaborator runs wait on `depends_on_run_id` until the lead completes.
+
+## Responder selection (legacy path)
+
+`decideResponders()` still handles DM rooms and simple cases:
+
+1. **Explicit mention** — `@Employee Name`
+2. **Smart assist** — topic participation mode + role heuristics
+3. **DM default** — counterpart employee on General/Direct Chat topic
+4. **Slash command** — forced employee IDs
 
 ## Auth pattern
 
 | Context | Mechanism |
 |---------|-----------|
-| Browser | Supabase session via `@supabase/supabase-js` |
-| API routes | `Authorization: Bearer <access_token>` → `requireAuthUser()` |
-| Workspace scope | `requireWorkspaceMembership()` checks role |
-| Room scope | `assertCanSendRoomMessage()` / `assertCanAccessRoom()` |
-| Agent processing | User auth + **service role client** for writes that bypass RLS gaps |
+| Browser | Supabase session |
+| API routes | Bearer JWT → `requireAuthUser()` |
+| Destructive ops | + `requirePasswordReauth()` (V16.3) |
+| Agent processing | User auth + service role client |
 
-Client helper: `src/lib/api/auth-client.ts` attaches the Bearer token to fetch calls.
+## Signup & onboarding flow (V16.5+)
 
-## Realtime sync
+```mermaid
+flowchart LR
+  A[Signup] --> B[Confirm email]
+  B --> C[Login]
+  C --> D[/onboarding]
+  D --> E[POST /workspaces/bootstrap]
+  E --> F[Hire employee + create room]
+  F --> G[Persist to Supabase]
+```
 
-When `backend === "supabase"`, the store subscribes to Postgres changes on all workspace tables (`SUPABASE_WORKSPACE_TABLES` in `src/lib/supabase/config.ts`) with a 250ms debounced reload.
+Workspace is **not** created at signup — only during onboarding.
 
-## AI model routing
+## Channels vs DMs (V16.7)
 
-Employees have a `model_mode` that maps to SiliconFlow models via `src/lib/ai/model-catalog.ts`:
+| Kind | `dm_employee_id` | UI label | Created by |
+|------|------------------|----------|------------|
+| `channel` | Must be null | Project room | Create room modal |
+| `dm` | Required | Direct message | Hire employee |
 
-| Mode | Env var | Default model |
-|------|---------|---------------|
-| `cheap` | `ADEHQ_SILICONFLOW_CHEAP_MODEL` | DeepSeek-V3 |
-| `balanced` | `ADEHQ_SILICONFLOW_MODEL` | DeepSeek-V4-Flash |
-| `strong` | `ADEHQ_SILICONFLOW_STRONG_MODEL` | DeepSeek-V4-Pro |
-| `coding` | `ADEHQ_SILICONFLOW_CODER_MODEL` | Qwen3-Coder-30B |
-| `long_context` | `ADEHQ_SILICONFLOW_LONG_CONTEXT_MODEL` | MiniMax-M2.5 |
+DB constraint: `project_rooms_kind_shape`
 
-If `SILICONFLOW_API_KEY` is missing or a call fails, the runtime falls back to scripted responses and logs a work log event — the app does not crash.
+## AI reply pipeline
+
+```
+Structured LLM call → normalize-model-response → sanitize-effects
+→ enforcePermissions → persist message + artifacts → queue follow-ups
+```
+
+Artifacts (V16.2): tasks, memory, approvals, work log entries, email drafts attached inline to AI messages.
 
 ## Cost governance
 
-`beginAiRun()` in `src/lib/ai/cost-guard.ts` checks workspace limits before queuing:
+Unchanged — `beginAiRun()` checks workspace limits before queuing. See [AI runtime PRD](/prds/ai-runtime).
 
-- Daily token budget
-- Daily cost cap
-- Max parallel runs
-- Max handoff depth
+## Related
 
-Settings live in `workspace_ai_settings` and are editable by owner/admin via `PATCH /api/workspaces/:id/ai-settings`.
+- [Channel orchestration](/features/channel-orchestration)
+- [Messaging](/features/messaging)
+- [Platform overview](/platform/overview)

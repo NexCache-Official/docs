@@ -1,21 +1,21 @@
 ---
 title: "Messaging"
-description: "Human and AI messaging flow — from RoomChat to agent runs."
+description: "Human and AI messaging flow — conversation planning, async agent runs, and artifacts."
 ---
 
 ## Overview
 
-Messaging is the core interaction loop. Humans send messages in topics; the server saves them, decides which AI employees should respond, queues agent runs, and the client processes each run to produce AI replies.
+Messaging is the core interaction loop. Since V16.8, the pipeline uses **conversation orchestration** — messages are classified, collaboration plans are built, runs are queued with dependencies, and the client processes them asynchronously.
 
 ## Client component
 
 `RoomChat` (`src/components/RoomChat.tsx`) handles:
 
 - Message composition via `ChatComposer`
-- @mention autocomplete
-- Slash commands
+- @mention autocomplete (ordered mentions for collaboration)
+- Collaboration plan banner (`CollaborationPlanBanner`)
+- Async run processing with polling recovery
 - Optimistic UI updates
-- Calling the messages API and processing queued runs
 
 ## Send message flow
 
@@ -26,74 +26,97 @@ POST /api/rooms/{roomId}/messages
 Authorization: Bearer {access_token}
 
 {
-  "content": "@Engineer can you review this?",
+  "content": "@PM work with @Engineer on the launch plan",
   "topicId": "uuid",
-  "clientMessageId": "optional-client-id",
-  "mentionsJson": [{ "type": "ai_employee", "id": "emp-1", "name": "Engineer" }],
-  "mode": "live"
+  "mentionsJson": [
+    { "type": "ai_employee", "id": "pm-1", "name": "PM" },
+    { "type": "ai_employee", "id": "eng-1", "name": "Engineer" }
+  ]
 }
 ```
 
-If `topicId` is omitted, the server uses the room's **General** topic.
+### 2. Server saves and plans (parallel)
 
-### 2. Server saves and decides
-
-The route handler (`src/app/api/rooms/[roomId]/messages/route.ts`):
+The route handler:
 
 1. Validates auth, room membership, topic access
-2. Inserts human message via `insertHumanMessage()`
-3. Loads topic context (recent messages, employees, room)
-4. Calls `decideResponders()` to pick AI employees
-5. Queues runs via `queueAgentRuns()`
-6. Returns human message + `queuedRuns[]`
+2. **In parallel:** inserts human message + loads responder context (V16.2 optimization)
+3. Calls `planConversation()` — classifies mode, picks responders
+4. Queues runs via `queueAgentRuns()` (with `depends_on_run_id` for collaborators)
+5. Returns immediately — **no inline AI replies**
 
-### 3. Client processes runs
+```json
+{
+  "humanMessage": {},
+  "queuedRuns": [],
+  "blockedRuns": [],
+  "collaborationPlan": {
+    "mode": "lead_collaborator",
+    "participants": []
+  },
+  "aiMessages": []
+}
+```
 
-For each queued run, the client calls:
+### 3. Client polls and processes
 
 ```typescript
+// Poll for processable runs
+GET /api/rooms/{roomId}/topics/{topicId}/agent-runs?status=queued,waiting,running
+
+// Process each run
 POST /api/agent-runs/{runId}/process
 { "workspaceId": "uuid", "mode": "live" }
 ```
 
-The processor (`processQueuedAgentRun`) calls SiliconFlow, enforces permissions, persists the AI message and any side effects (tasks, memory, approvals).
+Collaborator runs in `waiting` status become processable when their `depends_on_run_id` run completes.
 
 ### 4. Realtime sync
 
-Other browser tabs receive updates via Supabase Realtime subscriptions on the `messages` table.
+Other tabs receive AI messages via Supabase Realtime on the `messages` table.
 
-## Responder selection rules
+## Message artifacts (V16.2)
 
-Priority order in `decideResponders()`:
+AI messages can include inline work objects:
 
-1. **Forced IDs** — slash command override
-2. **@mentions** — parsed from content or `mentionsJson`
-3. **Smart assist** — if topic mode allows, `pickSmartResponders()` uses heuristics
-4. **DM default** — DM room + General topic → counterpart employee responds
+```typescript
+type MessageArtifact = {
+  type: "task" | "memory" | "approval" | "work_log" | "email_draft";
+  id: string;
+  label: string;
+};
+```
 
-Max parallel responders capped by `max_parallel_runs` workspace setting.
+Rendered by `RoomMessageItem` as clickable cards below the message text.
+
+## AI reply sanitization (V16.1)
+
+Structured LLM output is normalized before display:
+
+- `normalize-model-response.ts` — extract conversational text, strip JSON wrappers
+- `sanitize-effects.ts` — clean side-effect payloads (V16.8)
+- DMs receive human-like tone via updated prompts
+
+Raw JSON no longer leaks into chat.
 
 ## Error handling
-
-Structured errors via `messageError()` (`src/lib/server/message-errors.ts`):
 
 | Code | Meaning |
 |------|---------|
 | `message_required` | Empty content |
-| `room_not_found` | Invalid room ID |
-| `not_room_member` | User lacks send permission |
 | `topic_archived` | Cannot post to archived topic |
-| `topic_not_in_room` | Topic doesn't belong to room |
+| `ai_runtime_failed_but_message_saved` | Message saved, AI queue failed (HTTP 207) |
+
+## Topic AI controls
+
+If `aiStopped` is true on the topic, no runs are queued regardless of mentions. See [Channel orchestration](/features/channel-orchestration).
 
 ## Demo mode fallback
 
-When `backend === "demo"`, messages stay in-memory and `useResponder` + `employee-engine.ts` produce scripted replies without API calls.
-
-## Debug tracing
-
-Set header `X-AdeHQ-Debug: true` on API calls to receive extended error payloads. The debug terminal (`DebugTerminal`) surfaces traces in development.
+When `backend === "demo"`, messages stay in-memory and `employee-engine.ts` produces scripted replies.
 
 ## Related
 
-- [Agents API](/api/agents) — process endpoint details
-- [AI runtime PRD](/prds/ai-runtime) — cost governance and run lifecycle
+- [Channel orchestration](/features/channel-orchestration)
+- [Rooms API](/api/rooms)
+- [Agents API](/api/agents)

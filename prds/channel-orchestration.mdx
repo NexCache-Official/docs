@@ -1,0 +1,128 @@
+---
+title: "PRD: Channel AI orchestration"
+description: "Product requirements for conversation planning, governance, and choreographed multi-employee AI teamwork."
+tag: "SHIPPED"
+---
+
+## Problem
+
+Single-responder `@mention` logic doesn't handle real team dynamics: group greetings, multi-employee collaboration ("work with @Engineer and @Researcher"), sequential handoffs, or panel-style requests. Ungoverned AI-to-AI chains can spiral, and users need runtime controls to pause or stop AI in a topic.
+
+## Solution
+
+A **conversation orchestrator** that classifies each human message into a conversation mode, builds a collaboration plan, queues dependent agent runs, and enforces channel governance rules.
+
+Shipped across **V16.8** (governance + AI control) and **V16.9** (orchestrator + run dependencies).
+
+## Goals
+
+- Classify messages into conversation modes automatically
+- Support lead + collaborator patterns with staggered responses
+- Prevent AI spam via cooldowns, hop limits, and greeting detection
+- Give users topic-level AI stop/pause/resume controls
+- Recover and poll in-flight runs from the client
+
+## Conversation modes
+
+| Mode | Trigger | Behavior |
+|------|---------|----------|
+| `direct_reply` | Single @mention | One employee responds |
+| `lead_collaborator` | "work with @A and @B", sequential "then @" patterns | Lead responds first; collaborators wait on `depends_on_run_id` |
+| `panel_response` | "what do you both think", "everyone weigh in" | Multiple employees respond in parallel |
+| `broadcast_social` | "hey team", group greeting | One social coordinator or PM greets |
+| `ambient_smart` | No mentions, smart assist enabled | Role-matched smart participation |
+| `silent` | AI stopped on topic, or note-for-record patterns | No runs queued |
+
+Classifier: `classifyConversationMode()` in `src/lib/server/conversation-orchestrator.ts`.
+
+## Channel governance
+
+Constants in `src/lib/server/channel-governance.ts`:
+
+| Rule | Value | Purpose |
+|------|-------|---------|
+| Ambient cooldown | 3 minutes | Prevent back-to-back ambient responses |
+| Max AI-to-AI hops | 2 | Limit follow-up chains |
+| Max follow-ups per root | 3 | Cap runs per trigger message |
+| Max same-employee reentry | 1 | Prevent one employee dominating |
+| Greeting max tokens | 120 | Keep greeting replies short |
+
+Greeting detection picks a `social_coordinator` employee, or falls back to PM → operations → most recently active.
+
+## Topic AI controls
+
+Stored in `room_topics.metadata`:
+
+| Key | Type | Effect |
+|-----|------|--------|
+| `aiStopped` | boolean | Block all AI queueing |
+| `smartAssistPaused` | boolean | Temporarily disable smart assist |
+| `aiPausedUntil` | ISO timestamp | Auto-resume smart assist after expiry |
+| `blockedEmployeeIds` | string[] | Block specific employees |
+| `aiParticipationMode` | enum | Base participation setting |
+
+API: `GET/POST /api/topics/:topicId/ai-control`
+
+Actions: `stop_all`, `resume`, `pause_smart`, `stop_employee`, `resume_employee`
+
+`stop_all` also cancels active queued/running agent runs for the topic.
+
+## Participation modes (updated)
+
+| Mode | Default for | Behavior |
+|------|-------------|----------|
+| `smart_assist_lite` | General topic | Light smart assist — greetings, role match |
+| `smart_assist` | Non-General topics | Full smart participation |
+| `active_team` | — | Aggressive heuristics |
+| `manual_only` | — | @mentions and DMs only |
+| `silent_observation` | — | AI observes but doesn't respond |
+
+Effective mode respects AI control state via `getEffectiveParticipationMode()`.
+
+## Agent run dependencies (V16.9)
+
+New column: `agent_runs.depends_on_run_id`
+
+Collaborator runs enter `waiting` status until the lead run completes. Client polls `GET /api/rooms/:roomId/topics/:topicId/agent-runs` to find processable runs.
+
+Run metadata (`run_metadata` JSONB) stores:
+
+- `collaborationId`, `collaborationRole`, `collaborationStatus`
+- `conversationMode`, `participants`, `staggerMs`
+
+## Message send response (changed)
+
+`POST /api/rooms/:roomId/messages` now returns:
+
+```json
+{
+  "humanMessage": {},
+  "queuedRuns": [],
+  "blockedRuns": [],
+  "collaborationPlan": {},
+  "aiResponses": [],
+  "aiMessages": []
+}
+```
+
+AI replies are **not inline** — the client processes runs asynchronously and polls for recovery.
+
+## Technical implementation
+
+| Component | Path |
+|-----------|------|
+| Orchestrator | `src/lib/server/conversation-orchestrator.ts` |
+| Governance | `src/lib/server/channel-governance.ts` |
+| Follow-up queue | `src/lib/server/queue-follow-up-runs.ts` |
+| AI control | `src/lib/topic-ai-control.ts` |
+| AI control API | `src/app/api/topics/[topicId]/ai-control/route.ts` |
+| Run recovery API | `src/app/api/rooms/[roomId]/topics/[topicId]/agent-runs/route.ts` |
+| UI banner | `src/components/CollaborationPlanBanner.tsx` |
+| Migration V16.8 | `20250630140000_channel_ai_orchestration_v168.sql` |
+| Migration V16.9 | `20250701140000_conversation_orchestrator_v169.sql` |
+
+## Related
+
+- [Channel orchestration feature doc](/features/channel-orchestration)
+- [Messaging](/features/messaging)
+- [Topics API](/api/topics)

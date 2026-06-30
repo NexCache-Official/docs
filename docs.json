@@ -77,8 +77,10 @@
             "pages": [
               "prds/messaging-v2",
               "prds/ai-runtime",
+              "prds/channel-orchestration",
               "prds/workforce",
-              "prds/auth-onboarding"
+              "prds/auth-onboarding",
+              "prds/account-lifecycle"
             ]
           },
           {
@@ -86,6 +88,7 @@
             "pages": [
               "features/rooms-topics",
               "features/messaging",
+              "features/channel-orchestration",
               "features/ai-employees",
               "features/work-graph"
             ]
@@ -113,6 +116,7 @@
               "api/rooms",
               "api/topics",
               "api/agents",
+              "api/account-workspaces",
               "api/ai-settings"
             ]
           }

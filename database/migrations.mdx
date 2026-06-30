@@ -3,95 +3,85 @@ title: "Database migrations"
 description: "Ordered migration history for the AdeHQ Postgres schema."
 ---
 
-Apply migrations in timestamp order on existing Supabase projects. Each migration is idempotent where possible.
+Apply migrations in timestamp order on existing Supabase projects.
 
 ## Migration timeline
 
-| Migration | Date | Summary |
-|-----------|------|---------|
-| `20250627120000_align_production_schema.sql` | Jun 27 | `workspace_mode`, member `status`/`joined_at`, `model_provider_configs` |
-| `20250629120000_ai_runtime_and_work_graph.sql` | Jun 29 | AI runtime tables, work-graph linking columns, `model_mode` on employees |
-| `20250629140000_siliconflow_only_providers.sql` | Jun 29 | Coerce legacy provider values to `siliconflow` |
-| `20250629160000_room_topics_messaging_v2.sql` | Jun 29 | **Messaging v2** — topics, topic members, reactions, topic FKs |
-| `20250629180000_backfill_workspace_ai_settings.sql` | Jun 29 | Default `workspace_ai_settings` row per workspace |
+| Migration | Version | Summary |
+|-----------|---------|---------|
+| `20250627120000_align_production_schema.sql` | — | `workspace_mode`, member status, `model_provider_configs` |
+| `20250629120000_ai_runtime_and_work_graph.sql` | — | AI runtime tables, work-graph linking |
+| `20250629140000_siliconflow_only_providers.sql` | — | Coerce providers to `siliconflow` |
+| `20250629160000_room_topics_messaging_v2.sql` | — | Topics, topic members, reactions |
+| `20250629180000_backfill_workspace_ai_settings.sql` | — | Default AI settings per workspace |
+| `20250629200000_workspace_owner_delete.sql` | V16.2 | Owner can DELETE workspace (RLS policy) |
+| `20250630000000_seed_tools_catalog.sql` | V16.4 | Global tools catalog (23 tools) |
+| `20250630120000_room_kind_constraints.sql` | V16.7 | DM vs channel constraint on `project_rooms` |
+| `20250630140000_channel_ai_orchestration_v168.sql` | V16.8 | Agent run metadata, participation style |
+| `20250701140000_conversation_orchestrator_v169.sql` | V16.9 | Run dependencies (`depends_on_run_id`) |
 
-## Details
+## V16.2 — Workspace owner delete
 
-### 20250627120000 — Production alignment
+```sql
+create policy "workspaces_delete_owner"
+on public.workspaces for delete
+using (owner_id = auth.uid());
+```
 
-Adds fields needed for production/demo separation:
+Enables permanent workspace deletion via `DELETE /api/workspaces/:id`.
 
-- `workspaces.workspace_mode` (`real` | `demo`)
-- `workspace_members.status`, `joined_at`
-- `model_provider_configs` table for future BYOK
+## V16.4 — Tools catalog seed
 
-### 20250629120000 — AI runtime & work graph
+Idempotent insert of 23 global tools into `public.tools`. Required before `workspace_tools` and `employee_tools` FK references work during onboarding.
 
-The largest migration. Adds:
+Tools include: web-search, github, notion, slack, siliconflow, vercel, supabase, and others (mostly `mock` or `not_connected` status).
 
-**New tables:**
-- `workspace_ai_settings`
-- `agent_runs`, `agent_run_steps`
-- `ai_usage_events`
+## V16.7 — Room kind constraints
 
-**New columns on existing tables:**
-- `ai_employees.model_mode`
-- `messages.agent_run_id`, `trigger_message_id`, `artifacts`
-- `tasks.created_by_run_id`
-- Work graph linking columns across tasks, memory, approvals, work_log
+```sql
+ALTER TABLE public.project_rooms
+  ADD CONSTRAINT project_rooms_kind_shape CHECK (
+    (kind = 'dm' AND dm_employee_id IS NOT NULL)
+    OR (kind <> 'dm' AND dm_employee_id IS NULL)
+  );
+```
 
-### 20250629140000 — SiliconFlow only
+Enforces: DMs always have a counterpart employee; channels never do.
 
-Data migration: updates any `ai_employees.provider` values other than `siliconflow` or `mock` to `siliconflow`.
+## V16.8 — Channel AI orchestration
 
-### 20250629160000 — Messaging v2
+**New columns on `agent_runs`:**
+- `response_reason text` — why this employee was selected
+- `root_trigger_message_id text` — links follow-ups to original human message
+- `run_metadata jsonb` — collaboration plan, role, status
 
-Topic-based rooms:
+**New column on `ai_employees`:**
+- `participation_style text default 'balanced_teammate'`
 
-**New tables:**
-- `room_topics` — topic metadata, counters, `metadata` JSONB
-- `topic_members` — read cursors, notification levels
-- `message_reactions`
+**Data migration:** General topics get `aiParticipationMode: smart_assist_lite`.
 
-**New columns:**
-- `topic_id` FK on messages, tasks, memory, approvals, work_log, agent_runs, agent_run_steps, ai_usage_events
+**Indexes:**
+- `idx_agent_runs_root_trigger`
+- `idx_agent_runs_topic_status`
 
-**Backfill:**
-- Creates General topic for every existing room
-- Assigns orphan messages to General topic
+## V16.9 — Conversation orchestrator
 
-### 20250629180000 — AI settings backfill
+**New column on `agent_runs`:**
+- `depends_on_run_id text` — collaborator waits for lead run
 
-Inserts default `workspace_ai_settings` for workspaces that don't have one:
-
-- `daily_token_limit`: 500,000
-- `daily_cost_limit_usd`: 10.00
-- `max_parallel_runs`: 3
-- `max_handoff_depth`: 2
+**Indexes:**
+- `idx_agent_runs_depends_on`
+- `idx_agent_runs_collab_lookup`
 
 ## Applying migrations
 
-### New project
-
 ```bash
-# Run in Supabase SQL editor
-supabase/schema.sql
+# Supabase SQL editor — run each file in order
+# Or with CLI:
+supabase db push
 ```
-
-### Existing project
-
-Run each migration file in order via Supabase SQL editor or CLI:
-
-```bash
-supabase db push   # if using Supabase CLI linked to project
-```
-
-## Keeping schema.sql in sync
-
-After adding migrations, update `supabase/schema.sql` to include the latest state so fresh bootstraps match production. Currently `schema.sql` is behind on topic tables — track this as a known gap.
 
 ## Related
 
 - [Database schema](/database/schema)
-- [Messaging v2 PRD](/prds/messaging-v2)
-- [AI runtime PRD](/prds/ai-runtime)
+- [Changelog](/changelog)

@@ -1,11 +1,11 @@
 ---
 title: "Rooms API"
-description: "POST messages and GET/POST topics for project rooms."
+description: "POST messages, GET/POST topics, and poll agent runs for project rooms."
 ---
 
 ## POST /api/rooms/:roomId/messages
 
-Save a human message and queue AI agent runs.
+Save a human message, plan conversation, and queue AI agent runs. **Does not return AI replies inline** — client processes runs asynchronously (V16.8+).
 
 **Auth:** Workspace member with room send permission.
 
@@ -15,8 +15,7 @@ Save a human message and queue AI agent runs.
 {
   "content": "string (required)",
   "topicId": "uuid (optional — defaults to General)",
-  "clientMessageId": "string (optional — idempotency hint)",
-  "mode": "mock | live (optional)",
+  "clientMessageId": "string (optional)",
   "mentionsJson": [
     { "type": "ai_employee", "id": "emp-id", "name": "Engineer" }
   ],
@@ -28,15 +27,42 @@ Save a human message and queue AI agent runs.
 
 ```json
 {
-  "ok": true,
-  "humanMessage": { "id": "...", "content": "...", "topicId": "..." },
+  "humanMessage": {
+    "id": "...",
+    "content": "...",
+    "topicId": "...",
+    "mentions": ["emp-id"]
+  },
   "queuedRuns": [
-    { "runId": "...", "employeeId": "...", "reason": "mention" }
-  ]
+    {
+      "runId": "...",
+      "employeeId": "...",
+      "reason": "mention",
+      "dependsOnRunId": null
+    }
+  ],
+  "blockedRuns": [],
+  "collaborationPlan": {
+    "mode": "direct_reply",
+    "collaborationId": "collab_...",
+    "rootTriggerMessageId": "...",
+    "status": "active",
+    "participants": [],
+    "pendingParticipants": []
+  },
+  "aiResponses": [],
+  "aiMessages": []
 }
 ```
 
-**Error codes:** `message_required`, `room_not_found`, `not_room_member`, `topic_archived`, `topic_not_in_room`
+**Processing flow:**
+
+1. `insertHumanMessage()` runs in parallel with `loadRespondersContext()`
+2. `planConversation()` classifies mode and picks responders
+3. `queueAgentRuns()` creates runs (with `depends_on_run_id` for collaborators)
+4. Client polls and processes each run
+
+**Error codes:** `message_required`, `room_not_found`, `not_room_member`, `topic_archived`, `topic_not_in_room`, `ai_runtime_failed_but_message_saved` (207)
 
 **Source:** `src/app/api/rooms/[roomId]/messages/route.ts`
 
@@ -48,28 +74,11 @@ List all topics in a room. Ensures the General topic exists.
 
 **Auth:** Workspace member with room access.
 
-**Response:**
-
-```json
-{
-  "topics": [
-    {
-      "id": "uuid",
-      "title": "General",
-      "status": "active",
-      "priority": "normal",
-      "messageCount": 42,
-      "metadata": { "aiParticipationMode": "manual_only" }
-    }
-  ]
-}
-```
-
 ---
 
 ## POST /api/rooms/:roomId/topics
 
-Create a new topic.
+Create a new topic. Non-General topics default to `smart_assist` participation mode (V17).
 
 **Auth:** Workspace member with room access.
 
@@ -79,13 +88,61 @@ Create a new topic.
 {
   "title": "string (required)",
   "description": "string (optional)",
-  "templateKey": "string (optional — from TOPIC_TEMPLATES)",
+  "templateKey": "engineering | research | product | bugs | ...",
   "priority": "low | normal | high | urgent",
   "memberIds": ["ai-employee-id"],
   "starterMessage": "string (optional)"
 }
 ```
 
-Creates topic, adds members, posts a system message, and optionally a starter human message.
-
 **Source:** `src/app/api/rooms/[roomId]/topics/route.ts`
+
+---
+
+## GET /api/rooms/:roomId/topics/:topicId/agent-runs
+
+Poll in-flight agent runs for recovery and client-side processing. Added in V16.8.
+
+**Auth:** Workspace member with room access.
+
+**Query params:**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `status` | `queued,waiting,running` | Comma-separated status filter |
+
+**Response:**
+
+```json
+{
+  "runs": [
+    {
+      "runId": "uuid",
+      "employeeId": "emp-id",
+      "employeeName": "Engineer",
+      "status": "waiting",
+      "reason": "mention",
+      "dependsOnRunId": "lead-run-id",
+      "collaborationRole": "collaborator",
+      "conversationMode": "lead_collaborator",
+      "stale": false,
+      "processable": false
+    }
+  ],
+  "collaborationPlan": {}
+}
+```
+
+A run is `processable` when:
+- Status is `queued`, or
+- Status is `waiting` with no dependency, or
+- Status is `waiting` and the dependency run is `completed`
+
+Runs stuck in `running` for more than 2 minutes are flagged `stale: true`.
+
+**Source:** `src/app/api/rooms/[roomId]/topics/[topicId]/agent-runs/route.ts`
+
+## Related
+
+- [Channel orchestration](/features/channel-orchestration)
+- [Messaging](/features/messaging)

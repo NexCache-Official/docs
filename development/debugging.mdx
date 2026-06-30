@@ -39,19 +39,25 @@ Structured errors from `src/lib/server/message-errors.ts`:
 
 <AccordionGroup>
   <Accordion title="SiliconFlow not configured">
-    Check Settings → AI Runtime. `configured` should be `true`. Set `SILICONFLOW_API_KEY` in env vars.
+    Check Settings → AI Runtime. Set `SILICONFLOW_API_KEY` in env vars.
   </Accordion>
   <Accordion title="Service role key missing">
-    Agent processing returns 500 with hint: "SUPABASE_SERVICE_ROLE_KEY is not set." Add it to Vercel env vars.
+    Agent processing returns 500 with hint. Add `SUPABASE_SERVICE_ROLE_KEY` to Vercel env vars.
+  </Accordion>
+  <Accordion title="AI stopped on topic">
+    Check topic panel AI settings. or `metadata.aiStopped` on the topic. Use Resume in the panel or `POST /api/topics/:id/ai-control` with action `resume`.
+  </Accordion>
+  <Accordion title="Collaborator run stuck in waiting">
+    Poll `GET /api/rooms/:roomId/topics/:topicId/agent-runs`. Collaborator runs wait for lead run to complete. Check if lead run failed.
   </Accordion>
   <Accordion title="No responders selected">
     Check topic AI participation mode. In `manual_only`, AI only responds to @mentions or in DMs.
   </Accordion>
   <Accordion title="Cost limit exceeded">
-    Run status becomes `blocked`. Check workspace AI settings or wait for daily reset.
+    Run status becomes `blocked`. Check workspace AI settings.
   </Accordion>
-  <Accordion title="Employee paused or archived">
-    Check employee status on workforce profile page.
+  <Accordion title="Raw JSON in chat (fixed V16.1)">
+    If you see JSON in messages, ensure `normalize-model-response.ts` is deployed. Upgrade to V16.1+.
   </Accordion>
 </AccordionGroup>
 

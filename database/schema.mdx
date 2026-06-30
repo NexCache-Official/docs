@@ -50,18 +50,18 @@ erDiagram
 
 | Table | Key columns |
 |-------|-------------|
-| `ai_employees` | PK `(workspace_id, id)`, `role_key`, `provider`, `model_mode`, `permissions` |
+| `ai_employees` | PK `(workspace_id, id)`, `role_key`, `provider`, `model_mode`, `participation_style`, `permissions` |
 | `employee_tools` | `employee_id`, `tool_id`, `access_level` |
 
 ### Rooms & messaging
 
 | Table | Key columns |
 |-------|-------------|
-| `project_rooms` | PK `(workspace_id, id)`, `kind`, `dm_employee_id` |
+| `project_rooms` | PK `(workspace_id, id)`, `kind` (`channel`|`dm`), `dm_employee_id` — constrained by `project_rooms_kind_shape` |
 | `room_members` | `room_id`, `member_type`, `member_id` |
 | `room_topics` | `room_id`, `title`, `status`, `metadata`, counters |
 | `topic_members` | `topic_id`, `member_type`, `last_read_message_id` |
-| `messages` | `room_id`, `topic_id`, `sender_type`, `mentions_json`, `agent_run_id` |
+| `messages` | `room_id`, `topic_id`, `sender_type`, `mentions_json`, `agent_run_id`, `artifacts` |
 | `message_reactions` | `message_id`, `emoji`, `user_id` |
 
 ### Work graph
@@ -80,7 +80,7 @@ erDiagram
 | Table | Key columns |
 |-------|-------------|
 | `workspace_ai_settings` | `daily_token_limit`, `daily_cost_limit_usd`, `max_parallel_runs` |
-| `agent_runs` | `status`, `employee_id`, `topic_id`, `trigger_message_id` |
+| `agent_runs` | `status`, `employee_id`, `topic_id`, `trigger_message_id`, `response_reason`, `root_trigger_message_id`, `depends_on_run_id`, `run_metadata` |
 | `agent_run_steps` | `step_type`, `payload` |
 | `ai_usage_events` | `tokens_in`, `tokens_out`, `estimated_cost_usd` |
 | `model_provider_configs` | BYOK placeholder (admin write) |

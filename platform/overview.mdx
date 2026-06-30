@@ -11,7 +11,7 @@ AdeHQ lets teams hire AI employees, organize work in project rooms, and collabor
 |---------|-------------|
 | **Workspace** | Tenant boundary. One owner, members with roles (`owner`, `admin`, `member`, `viewer`). |
 | **AI employee** | A configured agent with role, model tier, permissions, and tools. Responds in rooms when mentioned or via smart participation. |
-| **Project room** | A channel (`kind: channel`) or direct message with one AI employee (`kind: dm`). |
+| **Project room** | A **channel** (group space) or **direct message** (`dm`) with one AI employee. |
 | **Topic** | A thread inside a room. Every room has a default **General** topic. Work graph items (tasks, memory, approvals) link to topics. |
 | **Agent run** | A queued or executing AI response job. Tracks steps, cost, and links to the trigger message. |
 | **Work graph** | Tasks, memory entries, approvals, and work log events — all auditable and linked to agent runs. |
@@ -36,7 +36,7 @@ All authenticated routes live under the `(app)` route group and are wrapped by `
 | Route | Purpose |
 |-------|---------|
 | `/` | Dashboard — workforce stats, recent activity |
-| `/rooms` | Channel list |
+| `/rooms` | Channel list (group channels + DMs separated — V16.7) |
 | `/rooms/[roomId]` | **Primary workspace** — topic list, chat, AI participation |
 | `/workforce` | AI employee directory |
 | `/workforce/[employeeId]` | Employee profile, model mode, permissions |

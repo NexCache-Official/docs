@@ -1,87 +1,123 @@
 ---
 title: "Rooms & topics"
-description: "How project rooms and topic threads work in AdeHQ."
+description: "Group channels, DMs, topic threads, and AI participation controls."
 ---
 
 ## Project rooms
 
-Rooms are the primary collaboration space. Two kinds:
+Two kinds of rooms, enforced at the database level (V16.7):
 
-| Kind | Description |
-|------|-------------|
-| `channel` | Shared room for a project or team |
-| `dm` | Direct message with a single AI employee (`dm_employee_id`) |
+| Kind | Description | `dm_employee_id` | Created by |
+|------|-------------|------------------|------------|
+| `channel` | Group collaboration space | Must be null | Create room modal |
+| `dm` | 1:1 with an AI employee | Required | Hiring an employee |
 
-Rooms are created via `CreateRoomModal` and persisted through `src/lib/supabase/persistence.ts`.
+DB constraint `project_rooms_kind_shape` in migration `20250630120000`.
+
+Helpers in `src/lib/rooms.ts`:
+
+```typescript
+isGroupChannel(room)  // kind !== "dm"
+isDirectMessage(room) // kind === "dm"
+getGroupChannels(rooms)
+getDirectMessages(rooms)
+```
+
+### UI navigation (V16.7)
+
+- **Sidebar** — separate sections for Channels and Direct Messages
+- **Rooms page** — filtered lists
+- **Command bar** — distinct actions for "New channel" vs employee DMs
 
 ### Room membership
 
-- Humans and AI employees are members via `room_members`
-- Workspace admins bypass membership checks (`src/lib/server/room-access.ts`)
+- Workspace admins bypass membership checks
 - Send permission: `assertCanSendRoomMessage()`
 
 ## Topics
 
-Every room has at least one topic. The **General** topic is auto-created and cannot be archived.
+Every room has at least one topic:
+
+| Room kind | Default topic label |
+|-----------|---------------------|
+| Channel | **General Chat** |
+| DM | **Direct Chat** |
+
+Helper: `mainChatLabel(isDm)` in `src/lib/topics.ts`
 
 ### Topic fields
 
 | Field | Description |
 |-------|-------------|
-| `title` | Display name (unique per room, case-insensitive) |
+| `title` | Display name (unique per room) |
 | `status` | `active`, `paused`, `resolved`, `archived` |
 | `priority` | `low`, `normal`, `high`, `urgent` |
-| `summary` | LLM-generated or manual summary |
-| `metadata` | JSONB — includes `aiParticipationMode` |
-| Counters | `message_count`, `task_count`, `open_task_count`, etc. |
+| `summary` | LLM-generated or manual |
+| `metadata` | AI participation mode, control flags |
+| Counters | `message_count`, `agent_run_count`, etc. |
 
-### AI participation modes
+### Archive and restore (V17)
 
-Set per topic in `metadata.aiParticipationMode`:
+- Archive via DELETE `/api/topics/:id` or topic panel
+- **Restore** archived topics from the topic panel (V17)
+- General/Direct Chat topic cannot be archived
 
-```json
-{
-  "aiParticipationMode": "manual_only"
-}
-```
+## AI participation modes
 
-| Mode | When AI responds without @mention |
-|------|-----------------------------------|
-| `manual_only` | Never (except DM rooms) |
-| `smart_assist` | Keyword/role heuristics match |
-| `active_team` | More aggressive heuristics |
+| Mode | Default for | Behavior |
+|------|-------------|----------|
+| `smart_assist_lite` | General/Direct Chat | Light ambient — greetings, role match |
+| `smart_assist` | Other topics (V17 default on create) | Full smart participation |
+| `active_team` | — | Aggressive heuristics |
+| `manual_only` | — | @mentions and DMs only |
+| `silent_observation` | — | AI observes, doesn't respond |
 
-Helper: `getAiParticipationMode()` in `src/lib/topics.ts`.
+### Runtime AI controls (V16.8)
 
-### Topic templates
+Stored in `topic.metadata`, managed via topic panel (V17: collapsible section):
 
-`TOPIC_TEMPLATES` in `src/lib/topics.ts` provides quick-start presets (Bug fix, Feature spec, Research, etc.) with default title, description, and participation mode.
+| Control | Metadata key | Effect |
+|---------|--------------|--------|
+| Stop all AI | `aiStopped` | Block all queueing, cancel active runs |
+| Pause smart assist | `smartAssistPaused` + `aiPausedUntil` | Temporary smart assist off |
+| Block employee | `blockedEmployeeIds[]` | Prevent specific employee from responding |
+
+API: `POST /api/topics/:topicId/ai-control`
+
+Effective mode: `getEffectiveParticipationMode()` in `src/lib/topic-ai-control.ts`
+
+## Topic templates
+
+`TOPIC_TEMPLATES` in `src/lib/topics.ts`:
+
+engineering, research, product, bugs, launch, design, support, devops, funding, custom
+
+Each template suggests roles and provides a description preset.
+
+## Topic filters
+
+`filterTopics()` supports: `active`, `mine`, `ai_running`, `approvals`, `archived`
 
 ## UI components
 
 | Component | Purpose |
 |-----------|---------|
-| `TopicList` | Sidebar topic list with unread badges |
-| `TopicPanel` | Topic header — status, priority, summary, members |
-| `NewTopicModal` | Create topic with template selection |
-| Room page | `src/app/(app)/rooms/[roomId]/page.tsx` |
+| `TopicList` | Sidebar with unread badges and filters |
+| `TopicPanel` | Header, stats, collapsible AI settings (V17) |
+| `NewTopicModal` | Create with template |
+| `CollaborationPlanBanner` | Active multi-employee collaboration status |
 
 ## API endpoints
 
-- `GET /api/rooms/:roomId/topics` — list topics, ensures General exists
-- `POST /api/rooms/:roomId/topics` — create topic
-- `PATCH /api/topics/:topicId` — update topic
-- `DELETE /api/topics/:topicId` — soft-archive (not General)
-- `POST /api/topics/:topicId/members` — add AI employee
-- `POST /api/topics/:topicId/read` — update read cursor
-- `POST /api/topics/:topicId/summarize` — LLM summary
+- `GET/POST /api/rooms/:roomId/topics`
+- `GET /api/rooms/:roomId/topics/:topicId/agent-runs` — run polling
+- `PATCH/DELETE /api/topics/:topicId`
+- `GET/POST /api/topics/:topicId/ai-control`
+- `POST /api/topics/:topicId/members|read|summarize`
 
-See [Topics API](/api/topics) for request/response details.
+See [Topics API](/api/topics) for details.
 
-## Database tables
+## Related
 
-- `room_topics` — topic metadata and counters
-- `topic_members` — per-user/AI read cursors and notification level
-- `messages.topic_id` — FK linking messages to topics
-
-Migration: `20250629160000_room_topics_messaging_v2.sql`
+- [Channel orchestration](/features/channel-orchestration)
+- [Messaging v2 PRD](/prds/messaging-v2)

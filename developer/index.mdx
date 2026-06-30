@@ -24,11 +24,11 @@ Engineering reference for the AdeHQ platform — architecture, PRDs, APIs, datab
 
 | Area | Status | Notes |
 |------|--------|-------|
-| Auth & onboarding | Shipped | Email/password via Supabase, multi-workspace |
-| Rooms & topics (Messaging v2) | Shipped | Zulip-style threads, AI participation modes |
-| AI runtime | Shipped | SiliconFlow-only live provider, cost guardrails |
-| Workforce | Shipped | Hire, configure, mention in rooms |
-| Work graph | Shipped | Tasks, memory, approvals, work log linked to agent runs |
+| Auth & onboarding | Shipped | Email confirm required; workspace created in onboarding (V16.5+) |
+| Rooms & topics | Shipped | Channels vs DMs (V16.7), topic restore (V17) |
+| Channel orchestration | Shipped | Multi-employee collaboration, AI controls (V16.8–16.9) |
+| AI runtime | Shipped | Async agent runs, cost guardrails, artifacts (V16.2) |
+| Account lifecycle | Shipped | Workspace/account deletion with password re-auth (V16.2–16.3) |
 | Demo mode | Dev-only | Gated by `NEXT_PUBLIC_ENABLE_DEMO_MODE` |
 | Real integrations | Not built | Slack, GitHub, billing, MCP, real calls |
 

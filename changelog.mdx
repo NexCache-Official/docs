@@ -1,97 +1,180 @@
 ---
 title: "Changelog"
-description: "Platform changelog aligned with development commits and migrations."
+description: "Platform changelog aligned with AdeHQ releases and database migrations."
 ---
 
-Development history for AdeHQ, mapped to commits and schema migrations.
+Development history for AdeHQ. Each entry maps to git commits in [NexCache-Official/AdeHQ](https://github.com/NexCache-Official/AdeHQ).
+
+## V17 — Topic panel UX (2025-07)
+
+<Update label="2025-07-01" description="Shipped">
+  Simplified topic right panel with collapsible AI settings and topic restore.
+</Update>
+
+- **TopicPanel** — collapsible AI participation settings section
+- **Restore topic** — unarchive archived topics from the panel
+- New topics default to `smart_assist` participation mode
+- `mainChatLabel()` — "Direct Chat" for DMs, "General Chat" for channels
+
+---
+
+## V16.9 — Conversation orchestrator (2025-07)
+
+<Update label="2025-07-01" description="Shipped">
+  Choreographed AI teamwork with run dependencies and collaboration plans.
+</Update>
+
+- **Migration:** `20250701140000_conversation_orchestrator_v169.sql`
+- New column: `agent_runs.depends_on_run_id`
+- `conversation-orchestrator.ts` — mode classification, lead/collaborator/panel plans
+- `queue-follow-up-runs.ts` — chained handoff runs
+- `CollaborationPlanBanner` UI component
+- Messages API returns `collaborationPlan`; AI replies processed async
+
+PRD: [Channel orchestration](/prds/channel-orchestration)
+
+---
+
+## V16.8 — Channel AI orchestration (2025-06-30)
+
+<Update label="2025-06-30" description="Shipped">
+  Conversation governance, topic AI controls, and run recovery polling.
+</Update>
+
+- **Migration:** `20250630140000_channel_ai_orchestration_v168.sql`
+- New columns: `agent_runs.response_reason`, `root_trigger_message_id`, `run_metadata`
+- New column: `ai_employees.participation_style`
+- General topics default to `smart_assist_lite`
+- `channel-governance.ts` — cooldowns, greeting detection, hop limits
+- `topic-ai-control.ts` — stop/pause/block AI per topic
+- New APIs: `POST/GET /api/topics/:id/ai-control`, `GET /api/rooms/:roomId/topics/:topicId/agent-runs`
+- `sanitize-effects.ts` — clean LLM side-effect payloads
+
+---
+
+## V16.7 — Channels vs DMs (2025-06-30)
+
+<Update label="2025-06-30" description="Shipped">
+  Separate group channels from employee DMs in UI and data model.
+</Update>
+
+- **Migration:** `20250630120000_room_kind_constraints.sql`
+- DB constraint: DMs require `dm_employee_id`; channels must not have one
+- `src/lib/rooms.ts` — `isGroupChannel()`, `isDirectMessage()`, filters
+- Sidebar, rooms page, command bar split channels and DMs
+- Hire employee auto-creates DM room; create room is channels only
+
+---
+
+## V16.6 — Onboarding persistence (2025-06-30)
+
+<Update label="2025-06-30" description="Shipped">
+  Persist onboarding employee, room, and completion to Supabase.
+</Update>
+
+- `OnboardingFlow` writes employee, room, and `onboarding_complete` to Postgres
+- `demo-store.tsx` — `finishOnboarding()` remote persist path
+- Five-step onboarding wizard
+
+---
+
+## V16.5 — Deferred workspace creation (2025-06-30)
+
+<Update label="2025-06-30" description="Shipped">
+  Defer workspace creation to onboarding; enforce email confirmation on login.
+</Update>
+
+- Signup creates auth user only — no workspace until onboarding
+- Login blocks unconfirmed emails via `src/lib/auth/session.ts`
+- New API: `POST /api/workspaces/bootstrap`
+- `workspace-bootstrap.ts` — idempotent workspace creation
+
+PRD update: [Auth & onboarding](/prds/auth-onboarding)
+
+---
+
+## V16.4 — Tools catalog seed (2025-06-30)
+
+<Update label="2025-06-30" description="Shipped">
+  Seed global tools catalog before workspace setup.
+</Update>
+
+- **Migration:** `20250630000000_seed_tools_catalog.sql`
+- 23 global tools (GitHub, Notion, Slack, SiliconFlow, etc.)
+- New API: `POST /api/tools/ensure-catalog`
+- Fixes signup confirmation FK errors on `workspace_tools`
+
+---
+
+## V16.3 — Password re-auth for deletion (2025-06-29)
+
+<Update label="2025-06-29" description="Shipped">
+  Require password re-authentication before workspace or account deletion.
+</Update>
+
+- `requirePasswordReauth()` in auth-server
+- Account and workspace DELETE endpoints require `password` in body
+
+---
+
+## V16.2 — Faster messaging & deletion (2025-06-29)
+
+<Update label="2025-06-29" description="Shipped">
+  Faster messaging, work-object AI outputs, account/workspace deletion.
+</Update>
+
+- **Migration:** `20250629200000_workspace_owner_delete.sql`
+- Parallel human message save + responder context load
+- **Message artifacts** — tasks, memory, approvals, email drafts attached to AI messages
+- `RoomMessageItem` renders artifact cards inline
+- New APIs: `GET/DELETE /api/account`, `DELETE /api/workspaces/:id`
+- `AccountDangerZone` in Settings
+- `account-lifecycle.ts` — purge logic
+
+PRD: [Account lifecycle](/prds/account-lifecycle)
+
+---
+
+## V16.1 — Human-like AI replies (2025-06-29)
+
+<Update label="2025-06-29" description="Shipped">
+  Stop raw JSON leaking to chat in DMs and channels.
+</Update>
+
+- `normalize-model-response.ts` — extract clean reply text from structured LLM output
+- Updated prompts for conversational tone in DMs
+- No schema changes
+
+---
 
 ## 2025-06-29 — Messaging v2 & AI runtime
 
-### Messaging v2 (topics)
-
 <Update label="2025-06-29" description="Shipped">
-  Topic-based rooms with Zulip-inspired threads. Every room has a General topic. AI participation modes per topic. Topic templates, summarization, unread tracking.
+  Topic-based rooms, agent runs, SiliconFlow-only provider.
 </Update>
 
-- Migration: `20250629160000_room_topics_messaging_v2.sql`
-- New tables: `room_topics`, `topic_members`, `message_reactions`
-- New APIs: topics CRUD, members, read cursors, summarize
-- UI: `TopicList`, `TopicPanel`, `NewTopicModal`
-- PRD: [Messaging v2](/prds/messaging-v2)
-
-### AI runtime
-
-<Update label="2025-06-29" description="Shipped">
-  Agent runs with cost governance, SiliconFlow-only provider, work graph linking.
-</Update>
-
-- Migration: `20250629120000_ai_runtime_and_work_graph.sql`
-- New tables: `agent_runs`, `agent_run_steps`, `ai_usage_events`, `workspace_ai_settings`
-- Provider migration: `20250629140000_siliconflow_only_providers.sql`
-- Settings backfill: `20250629180000_backfill_workspace_ai_settings.sql`
-- PRD: [AI runtime](/prds/ai-runtime)
-
-### Debug tooling
-
-- Debug terminal with trace collection
-- `X-AdeHQ-Debug` header for extended API error payloads
-- Improved agent run error messages (service role key hints)
-
-### SiliconFlow model tuning
-
-- Default models updated to DeepSeek-V4-Flash, DeepSeek-V3, Qwen3-Coder, MiniMax-M2.5
-- Model catalog with mode → env var mapping
-- Settings test provider panel
+- Migrations through `20250629180000_backfill_workspace_ai_settings.sql`
+- Topic threads, AI participation modes, agent run pipeline
+- PRDs: [Messaging v2](/prds/messaging-v2), [AI runtime](/prds/ai-runtime)
 
 ---
 
-## 2025-06-27 — Production alignment
-
-<Update label="2025-06-27" description="Shipped">
-  Production/demo separation, workspace mode, member status tracking.
-</Update>
-
-- Migration: `20250627120000_align_production_schema.sql`
-- Demo mode gated by `NEXT_PUBLIC_ENABLE_DEMO_MODE` (default off)
-- Production workspaces start empty
-
----
-
-## Initial release
+## Initial release (2025-06)
 
 <Update label="2025-06" description="Initial">
   AdeHQ AI workforce workspace — auth, onboarding, rooms, workforce, work graph.
 </Update>
 
-- Email/password auth via Supabase
-- Onboarding wizard (hire employee, create room)
-- Project rooms with messaging
-- AI employees with role templates
-- Tasks, memory, approvals, work log
-- Simulated calls and tool catalog
-- Vercel deployment at `ade-hq-eight.vercel.app`
+- Email/password auth, onboarding wizard, project rooms, AI employees
+- Tasks, memory, approvals, work log, simulated calls
 
 ---
 
-## Documentation
-
-<Update label="2025-06-29" description="Added">
-  Internal developer docs in `docs/` directory, synced to Mintlify.
-</Update>
-
-- Platform overview and architecture
-- PRDs for messaging, AI runtime, workforce, auth
-- Full API reference
-- Database schema and migration history
-- Development setup and integration guides
-
 ## How to update this changelog
 
-When shipping a feature:
+When shipping a feature in AdeHQ:
 
-1. Add an `<Update>` block with date and status
-2. Link to the relevant PRD if one exists
+1. Add an `<Update>` block with version, date, and status
+2. Link to the relevant PRD
 3. List migrations, new APIs, and UI changes
-4. Update feature docs if behavior changed
-
-Keep entries aligned with git commits and migration files so the docs reflect what actually shipped.
+4. Push to [NexCache-Official/docs](https://github.com/NexCache-Official/docs)

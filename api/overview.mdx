@@ -20,17 +20,20 @@ Most endpoints require:
 Authorization: Bearer {supabase_access_token}
 ```
 
-See [Authentication](/api/authentication) for the full auth flow and role requirements.
+Destructive operations additionally require **password re-authentication** in the request body. See [Authentication](/api/authentication).
 
 ## Endpoint summary
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| **POST** | `/rooms/:roomId/messages` | Member + room send | Save human message, queue AI runs |
+| **POST** | `/rooms/:roomId/messages` | Member + room send | Save human message, plan conversation, queue AI runs |
 | **GET** | `/rooms/:roomId/topics` | Member + room access | List topics |
 | **POST** | `/rooms/:roomId/topics` | Member + room access | Create topic |
+| **GET** | `/rooms/:roomId/topics/:topicId/agent-runs` | Member + room access | Poll/recover in-flight agent runs |
 | **PATCH** | `/topics/:topicId` | Creator or admin | Update topic |
 | **DELETE** | `/topics/:topicId` | Creator or admin | Archive topic |
+| **GET** | `/topics/:topicId/ai-control` | Member + room access | Read topic AI control metadata |
+| **POST** | `/topics/:topicId/ai-control` | Member + room access | Stop/pause/resume AI in topic |
 | **POST** | `/topics/:topicId/members` | Member + room access | Add AI to topic |
 | **POST** | `/topics/:topicId/read` | Member + room access | Update read cursor |
 | **POST** | `/topics/:topicId/summarize` | Member + room access | LLM topic summary |
@@ -40,12 +43,34 @@ See [Authentication](/api/authentication) for the full auth flow and role requir
 | **POST** | `/ai/test-provider` | Owner/admin | Test SiliconFlow |
 | **GET** | `/workspaces/:id/ai-settings` | Owner/admin | Load AI settings |
 | **PATCH** | `/workspaces/:id/ai-settings` | Owner/admin | Update AI settings |
+| **POST** | `/workspaces/bootstrap` | Authenticated | Create workspace (onboarding) |
+| **DELETE** | `/workspaces/:workspaceId` | Member + password | Delete workspace permanently |
+| **GET** | `/account` | Authenticated | Account deletion context |
+| **DELETE** | `/account` | Authenticated + password | Delete account permanently |
+| **POST** | `/tools/ensure-catalog` | Authenticated | Seed global tools catalog |
 | **POST** | `/auth/resend-confirmation` | Public | Resend signup email |
 | **POST** | `/dev/seed-demo` | None (dev only) | Demo seed introspection |
 
+## Message send response (V16.8+)
+
+`POST /api/rooms/:roomId/messages` returns immediately after queuing — AI replies are **not inline**:
+
+```json
+{
+  "humanMessage": {},
+  "queuedRuns": [],
+  "blockedRuns": [],
+  "collaborationPlan": {},
+  "aiResponses": [],
+  "aiMessages": []
+}
+```
+
+The client polls `GET .../agent-runs` and calls `POST .../process` for each run.
+
 ## Error format
 
-Most endpoints return JSON errors:
+Structured errors via `message-errors.ts`:
 
 ```json
 {
@@ -56,33 +81,27 @@ Most endpoints return JSON errors:
 }
 ```
 
-Message endpoints use structured codes from `message-errors.ts`. Agent process endpoints may include `debug` when `X-AdeHQ-Debug: true`.
-
-## Runtime configuration
-
-All API routes use:
-
-```typescript
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-```
+Special case: status **207** when message saved but AI queue failed (`ai_runtime_failed_but_message_saved`).
 
 ## Detailed references
 
 <CardGroup cols={2}>
   <Card title="Authentication" icon="lock" href="/api/authentication">
-    Bearer tokens, roles, room access checks.
+    Bearer tokens, password re-auth, roles.
   </Card>
   <Card title="Rooms" icon="message-square" href="/api/rooms">
-    Messages and topic listing/creation.
+    Messages, topics, agent-run polling.
   </Card>
   <Card title="Topics" icon="list" href="/api/topics">
-    CRUD, members, read cursors, summarize.
+    CRUD, AI control, summarize.
   </Card>
   <Card title="Agents" icon="bot" href="/api/agents">
     Agent run processing and direct respond.
   </Card>
+  <Card title="Account & workspace" icon="user" href="/api/account-workspaces">
+    Bootstrap, deletion, tools catalog.
+  </Card>
   <Card title="AI settings" icon="settings" href="/api/ai-settings">
-    Runtime status, provider test, workspace limits.
+    Runtime status, provider test, limits.
   </Card>
 </CardGroup>

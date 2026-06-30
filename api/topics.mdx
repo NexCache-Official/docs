@@ -1,11 +1,11 @@
 ---
 title: "Topics API"
-description: "Update, archive, manage members, read cursors, and summarize topics."
+description: "Update, archive, AI control, members, read cursors, and summarize topics."
 ---
 
 ## PATCH /api/topics/:topicId
 
-Update topic metadata.
+Update topic metadata including AI participation mode.
 
 **Auth:** Topic creator or workspace admin. Archive requires admin.
 
@@ -17,9 +17,11 @@ Update topic metadata.
   "status": "active | paused | resolved | archived",
   "priority": "low | normal | high | urgent",
   "summary": "string",
-  "aiParticipationMode": "manual_only | smart_assist | active_team"
+  "aiParticipationMode": "silent_observation | manual_only | smart_assist_lite | smart_assist | active_team"
 }
 ```
+
+General topics store `smart_assist_lite` when UI selects "Smart assist". Non-General topics use `smart_assist`.
 
 **Source:** `src/app/api/topics/[topicId]/route.ts`
 
@@ -31,13 +33,35 @@ Soft-archive a topic. Cannot archive the General topic.
 
 **Auth:** Topic creator or workspace admin.
 
-**Response:** `{ "ok": true }`
+---
+
+## GET /api/topics/:topicId/ai-control
+
+Read topic AI control metadata. Added in V16.8.
+
+**Auth:** Workspace member with room access.
+
+**Query params:** `workspaceId`, `roomId` (optional — inferred from topic row)
+
+**Response:**
+
+```json
+{
+  "metadata": {
+    "aiParticipationMode": "smart_assist",
+    "aiStopped": false,
+    "smartAssistPaused": false,
+    "aiPausedUntil": null,
+    "blockedEmployeeIds": []
+  }
+}
+```
 
 ---
 
-## POST /api/topics/:topicId/members
+## POST /api/topics/:topicId/ai-control
 
-Add an AI employee to a topic.
+Stop, pause, or resume AI in a topic. Added in V16.8.
 
 **Auth:** Workspace member with room access.
 
@@ -45,20 +69,44 @@ Add an AI employee to a topic.
 
 ```json
 {
-  "employeeId": "string (required)",
-  "notificationLevel": "all | mentions | none (optional)"
+  "action": "stop_all | resume | pause_smart | stop_employee | resume_employee",
+  "employeeId": "string (required for stop/resume employee)",
+  "pauseMinutes": 60
 }
 ```
 
-**Source:** `src/app/api/topics/[topicId]/members/route.ts`
+| Action | Effect |
+|--------|--------|
+| `stop_all` | Sets `aiStopped: true`, cancels queued/running runs |
+| `resume` | Clears all AI blocks and blocked employees |
+| `pause_smart` | Pauses smart assist for N minutes |
+| `stop_employee` | Adds employee to `blockedEmployeeIds` |
+| `resume_employee` | Removes employee from block list |
+
+**Response:** `{ "topic": { ...updated topic... } }`
+
+**Source:** `src/app/api/topics/[topicId]/ai-control/route.ts`
+
+---
+
+## POST /api/topics/:topicId/members
+
+Add an AI employee to a topic.
+
+**Request body:**
+
+```json
+{
+  "employeeId": "string (required)",
+  "notificationLevel": "all | mentions | none"
+}
+```
 
 ---
 
 ## POST /api/topics/:topicId/read
 
-Update the caller's read cursor for unread tracking.
-
-**Auth:** Workspace member with room access.
+Update read cursor for unread tracking.
 
 **Request body:**
 
@@ -68,17 +116,11 @@ Update the caller's read cursor for unread tracking.
 }
 ```
 
-Updates `topic_members.last_read_message_id` for the authenticated user.
-
-**Source:** `src/app/api/topics/[topicId]/read/route.ts`
-
 ---
 
 ## POST /api/topics/:topicId/summarize
 
-Generate an LLM summary of the topic's recent messages.
-
-**Auth:** Workspace member with room access.
+Generate LLM summary of recent topic messages.
 
 **Request body:**
 
@@ -88,16 +130,19 @@ Generate an LLM summary of the topic's recent messages.
 }
 ```
 
-**Response:**
+## Participation modes reference
 
-```json
-{
-  "ok": true,
-  "summary": "Topic summary text...",
-  "memoryEntryId": "uuid (if saveToMemory)"
-}
-```
+| Mode | Default for | Description |
+|------|-------------|-------------|
+| `smart_assist_lite` | General topic | Light ambient responses, greetings |
+| `smart_assist` | Other topics | Full smart participation |
+| `active_team` | — | Aggressive heuristics |
+| `manual_only` | — | @mentions and DMs only |
+| `silent_observation` | — | AI observes, doesn't respond |
 
-Uses SiliconFlow via the model router. Saves summary to `room_topics.summary` and optionally creates a draft memory entry.
+Effective mode respects runtime controls (`aiStopped`, `smartAssistPaused`). See `src/lib/topic-ai-control.ts`.
 
-**Source:** `src/app/api/topics/[topicId]/summarize/route.ts`
+## Related
+
+- [Rooms & topics](/features/rooms-topics)
+- [Channel orchestration](/features/channel-orchestration)

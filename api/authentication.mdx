@@ -81,6 +81,20 @@ Never expose the service role key to the browser. It is server-only.
 | `POST /api/auth/resend-confirmation` | None — accepts email only |
 | `POST /api/dev/seed-demo` | None — blocked unless `NODE_ENV === "development"` |
 
+## Password re-authentication (V16.3)
+
+Destructive operations require the user's current password in the request body:
+
+```typescript
+await requirePasswordReauth(user, body.password);
+```
+
+Used by:
+- `DELETE /api/account`
+- `DELETE /api/workspaces/:workspaceId`
+
+Returns 401 if password is missing or incorrect.
+
 ## Debug header
 
 Optional header for extended error payloads:

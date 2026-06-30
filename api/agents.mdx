@@ -54,8 +54,9 @@ Execute a queued agent run — the core AI processing endpoint.
 2. Check cost guard / run status
 3. Call `routeEmployeeResponse()` → SiliconFlow
 4. Enforce permissions on effects
-5. Persist AI message + side effects + usage event
+5. Persist AI message + artifacts + side effects + usage event
 6. Update run status and steps
+7. Queue follow-up runs for collaborators (`queue-follow-up-runs.ts`)
 
 **Source:** `src/app/api/agent-runs/[runId]/process/route.ts`
 
@@ -95,11 +96,26 @@ Direct AI response — bypasses the agent run queue.
 | Status | Meaning |
 |--------|---------|
 | `queued` | Waiting for client to call process |
+| `waiting` | Blocked on `depends_on_run_id` (V16.9) |
 | `running` | Currently executing |
 | `completed` | Success |
-| `failed` | LLM or processing error |
+| `failed` | LLM, processing error, or stopped by user |
+| `cancelled` | Cancelled via AI control stop_all (V16.8) |
 | `waiting_approval` | Blocked on human approval |
 | `blocked` | Cost limit or governance block |
+
+## Run metadata (V16.8+)
+
+Stored in `agent_runs.run_metadata`:
+
+| Field | Description |
+|-------|-------------|
+| `collaborationId` | Links runs in same collaboration |
+| `collaborationRole` | `lead` or `collaborator` |
+| `collaborationStatus` | `active`, `cancelled` |
+| `conversationMode` | e.g. `lead_collaborator` |
+| `participants` | Array of participant configs |
+| `staggerMs` | Delay before collaborator runs |
 
 ## Responder reasons
 
@@ -110,4 +126,11 @@ When a run is queued from the messages endpoint, each run includes a `reason`:
 | `mention` | @mentioned in content |
 | `dm_default` | DM room auto-response |
 | `smart_assist` | Topic participation heuristic |
+| `smart_assist_role_match` | Role-matched ambient response (V16.8) |
+| `group_greeting` | Group greeting detected (V16.8) |
 | `slash_command` | Forced via chat composer |
+
+## Related
+
+- [Run polling API](/api/rooms) — `GET .../agent-runs`
+- [Channel orchestration](/features/channel-orchestration)

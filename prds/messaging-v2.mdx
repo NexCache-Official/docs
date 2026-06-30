@@ -55,9 +55,13 @@ Stored in `topic.metadata.aiParticipationMode`:
 
 | Mode | Behavior |
 |------|----------|
+| `smart_assist_lite` | Light ambient — greetings, role match (General topic default) |
+| `smart_assist` | Full smart participation (non-General default since V17) |
+| `active_team` | Aggressive heuristics |
 | `manual_only` | AI responds only when @mentioned or in DMs |
-| `smart_assist` | AI may join based on keyword/role heuristics |
-| `active_team` | More aggressive smart participation |
+| `silent_observation` | AI observes but doesn't respond |
+
+Runtime controls (V16.8): `aiStopped`, `smartAssistPaused`, `blockedEmployeeIds` — see [Channel orchestration PRD](/prds/channel-orchestration).
 
 ### Topic templates
 

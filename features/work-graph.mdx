@@ -24,7 +24,9 @@ flowchart TD
 
 ## Tasks
 
-Kanban board at `/tasks`. Created by AI effects or manually commit.
+Kanban board at `/tasks`. Created by AI effects or manually.
+
+AI-created tasks appear as **message artifacts** (V16.2) — inline cards on the AI message that created them.
 
 | Field | Description |
 |-------|-------------|
@@ -83,9 +85,15 @@ All work graph CRUD goes through `demo-store.tsx` actions → `persist*` functio
 
 When `backend === "supabase"`, changes sync to Postgres and propagate via Realtime.
 
-## Clear workspace
+## Clear workspace vs delete workspace
 
-Owners/admins can wipe all work graph data via **Settings → Clear workspace data**. Type `CLEAR WORKSPACE` to confirm. Preserves workspace, owner, and members.
+| Action | Scope | Auth | Since |
+|--------|-------|------|-------|
+| **Clear workspace data** | Removes rooms, employees, messages, work graph — keeps workspace + members | Owner/admin, type `CLEAR WORKSPACE` | Original |
+| **Delete workspace** | Permanently deletes workspace and all data | Password re-auth + confirm name | V16.2 |
+| **Delete account** | Deletes auth user + optional owned workspaces | Password re-auth + confirm email | V16.2 |
+
+See [Account lifecycle PRD](/prds/account-lifecycle) and [Account API](/api/account-workspaces).
 
 ## Database tables
 
